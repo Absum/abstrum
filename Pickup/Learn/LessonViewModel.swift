@@ -21,11 +21,13 @@ final class LessonViewModel {
     var permissionDenied = false
 
     private let audio = AudioEngine()
+    private let store: ProgressStore
     private var holdFrames = 0
     private let holdRequired = 4   // ~0.3–0.4s of the right note before it counts
 
-    init(lesson: Lesson) {
+    init(lesson: Lesson, store: ProgressStore = .shared) {
         self.lesson = lesson
+        self.store = store
         var startIndex = 0
         #if DEBUG
         if let raw = ProcessInfo.processInfo.environment["PICKUP_LESSON_STEP"],
@@ -89,6 +91,7 @@ final class LessonViewModel {
             currentIndex += 1
         } else {
             isComplete = true
+            store.markCompleted(lesson.id)
             audio.stop()
         }
     }

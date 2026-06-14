@@ -68,6 +68,7 @@ targets:
       - path: Pickup/Core/NoteMath.swift
       - path: Pickup/Core/GuitarTuning.swift
       - path: Pickup/Learn/Lesson.swift
+      - path: Pickup/Learn/ProgressStore.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
