@@ -22,6 +22,9 @@ PKPitchDetector *pk_pitch_detector_create(double sampleRate);
 /* Free a detector created by pk_pitch_detector_create. Safe to pass NULL. */
 void pk_pitch_detector_destroy(PKPitchDetector *detector);
 
+/* Override the RMS silence gate (default set at creation). */
+void pk_pitch_detector_set_gate(PKPitchDetector *detector, float rmsGate);
+
 /*
  * Estimate the fundamental frequency of `count` mono float samples.
  * Returns the frequency in Hz, or a negative value when no confident pitch is

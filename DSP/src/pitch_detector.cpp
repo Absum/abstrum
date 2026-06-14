@@ -10,10 +10,10 @@
 namespace {
 // Below this normalized difference a tau is accepted as the period.
 constexpr float kThreshold = 0.15f;
-// RMS below this is treated as silence — return "no pitch" rather than noise.
-// Kept low so quiet input (soft playing, simulator mic) still registers; the
-// YIN aperiodicity threshold below is what actually rejects non-pitched noise.
-constexpr float kRmsGate = 0.004f;
+// Default RMS silence gate (overridable via pk_pitch_detector_set_gate from the
+// global AudioSettings). Kept low so quiet input still registers; the YIN
+// aperiodicity threshold below is what actually rejects non-pitched noise.
+constexpr float kDefaultRmsGate = 0.0025f;
 // Plausible fundamental range (Hz). Guitar low E ~82 Hz; leave headroom.
 constexpr float kMinFreq = 40.0f;
 constexpr float kMaxFreq = 2000.0f;
@@ -21,16 +21,22 @@ constexpr float kMaxFreq = 2000.0f;
 
 struct PKPitchDetector {
   double sampleRate;
+  float gate;
   std::vector<float> yin;  // reused scratch buffer
 };
 
 PKPitchDetector *pk_pitch_detector_create(double sampleRate) {
   auto *d = new PKPitchDetector();
   d->sampleRate = sampleRate > 0.0 ? sampleRate : 44100.0;
+  d->gate = kDefaultRmsGate;
   return d;
 }
 
 void pk_pitch_detector_destroy(PKPitchDetector *detector) { delete detector; }
+
+void pk_pitch_detector_set_gate(PKPitchDetector *detector, float rmsGate) {
+  if (detector && rmsGate >= 0.0f) detector->gate = rmsGate;
+}
 
 float pk_pitch_detector_process(PKPitchDetector *detector,
                                 const float *samples,
@@ -43,7 +49,7 @@ float pk_pitch_detector_process(PKPitchDetector *detector,
   double sumSquares = 0.0;
   for (size_t i = 0; i < count; ++i) sumSquares += double(samples[i]) * samples[i];
   const double rms = std::sqrt(sumSquares / double(count));
-  if (rms < kRmsGate) return -1.0f;
+  if (rms < detector->gate) return -1.0f;
 
   const size_t tauMax = count / 2;
   std::vector<float> &yin = detector->yin;

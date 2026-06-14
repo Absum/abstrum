@@ -20,6 +20,9 @@ typedef struct PKChordDetector PKChordDetector;
 PKChordDetector *pk_chord_detector_create(double sampleRate);
 void pk_chord_detector_destroy(PKChordDetector *detector);
 
+/* Override the RMS silence gate (default set at creation). */
+void pk_chord_detector_set_gate(PKChordDetector *detector, float rmsGate);
+
 /*
  * Fill outChroma12 (must hold 12 floats) with a normalized chromagram
  * (max bin == 1). Returns 1 if there was enough signal, 0 on silence/invalid.

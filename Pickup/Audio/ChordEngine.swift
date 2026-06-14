@@ -10,6 +10,7 @@ final class ChordEngine {
 
     init(sampleRate: Double) {
         detector = pk_chord_detector_create(sampleRate)
+        if let detector { pk_chord_detector_set_gate(detector, AudioSettings.inputGateRMS) }
     }
 
     deinit {

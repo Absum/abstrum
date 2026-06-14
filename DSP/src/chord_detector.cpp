@@ -9,7 +9,7 @@
 
 namespace {
 
-constexpr float kRmsGate = 0.004f;
+constexpr float kDefaultRmsGate = 0.0025f;  // overridable via set_gate
 constexpr double kMinFreq = 70.0;    // focus on the guitar range
 constexpr double kMaxFreq = 1200.0;
 // Large analysis window: at 44.1 kHz this is ~0.37s and ~2.7 Hz/bin, fine
@@ -48,6 +48,7 @@ void fft(std::vector<Complex> &a) {
 
 struct PKChordDetector {
     double sampleRate;
+    float gate;
     std::vector<float> ring;   // last kFFT samples
     size_t writePos;
     size_t filled;
@@ -56,6 +57,7 @@ struct PKChordDetector {
 PKChordDetector *pk_chord_detector_create(double sampleRate) {
     auto *d = new PKChordDetector();
     d->sampleRate = sampleRate > 0.0 ? sampleRate : 44100.0;
+    d->gate = kDefaultRmsGate;
     d->ring.assign(kFFT, 0.0f);
     d->writePos = 0;
     d->filled = 0;
@@ -63,6 +65,10 @@ PKChordDetector *pk_chord_detector_create(double sampleRate) {
 }
 
 void pk_chord_detector_destroy(PKChordDetector *detector) { delete detector; }
+
+void pk_chord_detector_set_gate(PKChordDetector *detector, float rmsGate) {
+    if (detector && rmsGate >= 0.0f) detector->gate = rmsGate;
+}
 
 int pk_chord_detector_chroma(PKChordDetector *detector,
                              const float *samples,
@@ -84,7 +90,7 @@ int pk_chord_detector_chroma(PKChordDetector *detector,
 
     double sumSquares = 0.0;
     for (size_t i = 0; i < n; ++i) sumSquares += double(detector->ring[i]) * detector->ring[i];
-    if (std::sqrt(sumSquares / double(n)) < kRmsGate) return 0;
+    if (std::sqrt(sumSquares / double(n)) < detector->gate) return 0;
 
     std::vector<Complex> buf(n);
     for (size_t i = 0; i < n; ++i) {

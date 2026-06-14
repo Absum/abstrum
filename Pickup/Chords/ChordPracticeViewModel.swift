@@ -22,7 +22,7 @@ final class ChordPracticeViewModel {
     private var chordEngine: ChordEngine?
     private var holdFrames = 0
     private let holdRequired = 3
-    private let threshold = 0.82
+    private let threshold = AudioSettings.chordMatchThreshold
 
     init(chord: Chord) {
         self.chord = chord
