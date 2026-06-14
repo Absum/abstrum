@@ -1,7 +1,6 @@
 //
 //  ContentView.swift
-//  App shell: the practice utilities as tabs. More surfaces (Learn, Songs)
-//  will join as the curriculum comes online.
+//  App shell: Learn is the home; Tuner and Metronome are the practice utilities.
 //
 
 import SwiftUI
@@ -11,19 +10,25 @@ struct ContentView: View {
 
     init() {
         #if DEBUG
-        if ProcessInfo.processInfo.environment["PICKUP_TAB"] == "metronome" {
-            _selection = State(initialValue: 1)
+        switch ProcessInfo.processInfo.environment["PICKUP_TAB"] {
+        case "learn": _selection = State(initialValue: 0)
+        case "tuner": _selection = State(initialValue: 1)
+        case "metronome": _selection = State(initialValue: 2)
+        default: break
         }
         #endif
     }
 
     var body: some View {
         TabView(selection: $selection) {
-            TunerView()
+            LearnHomeView()
                 .tag(0)
+                .tabItem { Label("Learn", systemImage: "graduationcap.fill") }
+            TunerView()
+                .tag(1)
                 .tabItem { Label("Tuner", systemImage: "tuningfork") }
             MetronomeView()
-                .tag(1)
+                .tag(2)
                 .tabItem { Label("Metronome", systemImage: "metronome") }
         }
         .tint(Theme.teal)

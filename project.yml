@@ -66,6 +66,8 @@ targets:
       - path: Tests
       - path: DSP
       - path: Pickup/Core/NoteMath.swift
+      - path: Pickup/Core/GuitarTuning.swift
+      - path: Pickup/Learn/Lesson.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
