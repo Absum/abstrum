@@ -28,6 +28,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: fi.absum.pickup
         PRODUCT_NAME: Pickup
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_OBJC_BRIDGING_HEADER: Pickup/Pickup-Bridging-Header.h
         HEADER_SEARCH_PATHS:
           - $(SRCROOT)/DSP/include
