@@ -10,6 +10,10 @@
 namespace {
 // Below this normalized difference a tau is accepted as the period.
 constexpr float kThreshold = 0.15f;
+// If nothing dips below kThreshold (common for real, harmonically-rich guitar
+// notes), fall back to the global CMND minimum as long as it's below this
+// ceiling — so the tuner reports a best estimate instead of "no pitch".
+constexpr float kFallbackCeiling = 0.55f;
 // Default RMS silence gate (overridable via pk_pitch_detector_set_gate from the
 // global AudioSettings). Kept low so quiet input still registers; the YIN
 // aperiodicity threshold below is what actually rejects non-pitched noise.
@@ -82,7 +86,14 @@ float pk_pitch_detector_process(PKPitchDetector *detector,
       break;
     }
   }
-  if (tauEstimate == 0) return -1.0f;
+  if (tauEstimate == 0) {
+    // No clear dip — take the global minimum if it's still periodic enough.
+    float best = 2.0f;
+    for (size_t tau = 2; tau < tauMax; ++tau) {
+      if (yin[tau] < best) { best = yin[tau]; tauEstimate = tau; }
+    }
+    if (tauEstimate == 0 || best > kFallbackCeiling) return -1.0f;
+  }
 
   // Step 4: parabolic interpolation around the chosen tau for sub-sample accuracy.
   float betterTau = float(tauEstimate);

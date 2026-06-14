@@ -24,7 +24,7 @@ final class AudioEngine {
     private let engine = AVAudioEngine()
     private var pitch: PitchEngine?
     private var currentSampleRate: Double = 44_100
-    private let bufferSize: AVAudioFrameCount = 2048
+    private let bufferSize: AVAudioFrameCount = 4096
 
     var isRunning: Bool { engine.isRunning }
 
