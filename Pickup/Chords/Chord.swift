@@ -1,14 +1,57 @@
 //
 //  Chord.swift
-//  Chord model, the open-chord bank, and chroma template matching.
+//  Chord model, qualities, the open-chord bank, and chroma template matching.
 //
 
 import Foundation
 
+enum ChordQuality: String, CaseIterable, Hashable {
+    case major, minor, dom7, min7, maj7, sus2, sus4
+
+    var label: String {
+        switch self {
+        case .major: return "Major"
+        case .minor: return "Minor"
+        case .dom7:  return "7"
+        case .min7:  return "m7"
+        case .maj7:  return "maj7"
+        case .sus2:  return "sus2"
+        case .sus4:  return "sus4"
+        }
+    }
+
+    /// Appended to the root for the chord name (E + "m" = "Em").
+    var suffix: String {
+        switch self {
+        case .major: return ""
+        case .minor: return "m"
+        case .dom7:  return "7"
+        case .min7:  return "m7"
+        case .maj7:  return "maj7"
+        case .sus2:  return "sus2"
+        case .sus4:  return "sus4"
+        }
+    }
+
+    /// Semitone intervals above the root.
+    var intervals: [Int] {
+        switch self {
+        case .major: return [0, 4, 7]
+        case .minor: return [0, 3, 7]
+        case .dom7:  return [0, 4, 7, 10]
+        case .min7:  return [0, 3, 7, 10]
+        case .maj7:  return [0, 4, 7, 11]
+        case .sus2:  return [0, 2, 7]
+        case .sus4:  return [0, 5, 7]
+        }
+    }
+}
+
 struct Chord: Identifiable, Hashable {
-    let id: String              // "E", "Am"
-    let name: String            // display name
-    let quality: String         // "Major" / "Minor"
+    let id: String
+    let name: String
+    let root: String
+    let quality: ChordQuality
     let positions: [FretPosition]   // sounded strings (open or fretted)
     let mutedStrings: [Int]
     let pitchClasses: Set<Int>      // detection template (0 = C … 11 = B)
@@ -55,39 +98,74 @@ enum ChordMatcher {
 }
 
 enum ChordBank {
-    // string 0 = low E … 5 = high e
-    static let all: [Chord] = [
-        Chord(id: "E", name: "E", quality: "Major",
-              positions: [.init(string: 0, fret: 0), .init(string: 1, fret: 2), .init(string: 2, fret: 2),
-                          .init(string: 3, fret: 1), .init(string: 4, fret: 0), .init(string: 5, fret: 0)],
-              mutedStrings: [], pitchClasses: [4, 8, 11]),       // E G# B
-        Chord(id: "Em", name: "Em", quality: "Minor",
-              positions: [.init(string: 0, fret: 0), .init(string: 1, fret: 2), .init(string: 2, fret: 2),
-                          .init(string: 3, fret: 0), .init(string: 4, fret: 0), .init(string: 5, fret: 0)],
-              mutedStrings: [], pitchClasses: [4, 7, 11]),       // E G B
-        Chord(id: "A", name: "A", quality: "Major",
-              positions: [.init(string: 1, fret: 0), .init(string: 2, fret: 2), .init(string: 3, fret: 2),
-                          .init(string: 4, fret: 2), .init(string: 5, fret: 0)],
-              mutedStrings: [0], pitchClasses: [9, 1, 4]),       // A C# E
-        Chord(id: "Am", name: "Am", quality: "Minor",
-              positions: [.init(string: 1, fret: 0), .init(string: 2, fret: 2), .init(string: 3, fret: 2),
-                          .init(string: 4, fret: 1), .init(string: 5, fret: 0)],
-              mutedStrings: [0], pitchClasses: [9, 0, 4]),       // A C E
-        Chord(id: "D", name: "D", quality: "Major",
-              positions: [.init(string: 2, fret: 0), .init(string: 3, fret: 2),
-                          .init(string: 4, fret: 3), .init(string: 5, fret: 2)],
-              mutedStrings: [0, 1], pitchClasses: [2, 6, 9]),    // D F# A
-        Chord(id: "Dm", name: "Dm", quality: "Minor",
-              positions: [.init(string: 2, fret: 0), .init(string: 3, fret: 2),
-                          .init(string: 4, fret: 3), .init(string: 5, fret: 1)],
-              mutedStrings: [0, 1], pitchClasses: [2, 5, 9]),    // D F A
-        Chord(id: "G", name: "G", quality: "Major",
-              positions: [.init(string: 0, fret: 3), .init(string: 1, fret: 2), .init(string: 2, fret: 0),
-                          .init(string: 3, fret: 0), .init(string: 4, fret: 0), .init(string: 5, fret: 3)],
-              mutedStrings: [], pitchClasses: [7, 11, 2]),       // G B D
-        Chord(id: "C", name: "C", quality: "Major",
-              positions: [.init(string: 1, fret: 3), .init(string: 2, fret: 2), .init(string: 3, fret: 0),
-                          .init(string: 4, fret: 1), .init(string: 5, fret: 0)],
-              mutedStrings: [0], pitchClasses: [0, 4, 7]),       // C E G
+    private static let rootPitchClass: [String: Int] = [
+        "C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5,
+        "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11,
     ]
+
+    private static func p(_ string: Int, _ fret: Int) -> FretPosition {
+        FretPosition(string: string, fret: fret)
+    }
+
+    private static func make(_ root: String, _ quality: ChordQuality,
+                             _ positions: [FretPosition], muted: [Int] = []) -> Chord {
+        let rootPC = rootPitchClass[root] ?? 0
+        let classes = Set(quality.intervals.map { (rootPC + $0) % 12 })
+        let name = root + quality.suffix
+        return Chord(id: name, name: name, root: root, quality: quality,
+                     positions: positions, mutedStrings: muted, pitchClasses: classes)
+    }
+
+    // string 0 = low E … 5 = high e. Verified common open voicings.
+    // Split per quality so the type-checker doesn't choke on one huge literal.
+    private static let majors: [Chord] = [
+        make("E", .major, [p(0, 0), p(1, 2), p(2, 2), p(3, 1), p(4, 0), p(5, 0)]),
+        make("A", .major, [p(1, 0), p(2, 2), p(3, 2), p(4, 2), p(5, 0)], muted: [0]),
+        make("D", .major, [p(2, 0), p(3, 2), p(4, 3), p(5, 2)], muted: [0, 1]),
+        make("G", .major, [p(0, 3), p(1, 2), p(2, 0), p(3, 0), p(4, 0), p(5, 3)]),
+        make("C", .major, [p(1, 3), p(2, 2), p(3, 0), p(4, 1), p(5, 0)], muted: [0]),
+    ]
+    private static let minors: [Chord] = [
+        make("E", .minor, [p(0, 0), p(1, 2), p(2, 2), p(3, 0), p(4, 0), p(5, 0)]),
+        make("A", .minor, [p(1, 0), p(2, 2), p(3, 2), p(4, 1), p(5, 0)], muted: [0]),
+        make("D", .minor, [p(2, 0), p(3, 2), p(4, 3), p(5, 1)], muted: [0, 1]),
+    ]
+    private static let dom7s: [Chord] = [
+        make("E", .dom7, [p(0, 0), p(1, 2), p(2, 0), p(3, 1), p(4, 0), p(5, 0)]),
+        make("A", .dom7, [p(1, 0), p(2, 2), p(3, 0), p(4, 2), p(5, 0)], muted: [0]),
+        make("D", .dom7, [p(2, 0), p(3, 2), p(4, 1), p(5, 2)], muted: [0, 1]),
+        make("G", .dom7, [p(0, 3), p(1, 2), p(2, 0), p(3, 0), p(4, 0), p(5, 1)]),
+        make("C", .dom7, [p(1, 3), p(2, 2), p(3, 3), p(4, 1), p(5, 0)], muted: [0]),
+        make("B", .dom7, [p(1, 2), p(2, 1), p(3, 2), p(4, 0), p(5, 2)], muted: [0]),
+    ]
+    private static let min7s: [Chord] = [
+        make("E", .min7, [p(0, 0), p(1, 2), p(2, 2), p(3, 0), p(4, 3), p(5, 0)]),
+        make("A", .min7, [p(1, 0), p(2, 2), p(3, 0), p(4, 1), p(5, 0)], muted: [0]),
+        make("D", .min7, [p(2, 0), p(3, 2), p(4, 1), p(5, 1)], muted: [0, 1]),
+    ]
+    private static let maj7s: [Chord] = [
+        make("C", .maj7, [p(1, 3), p(2, 2), p(3, 0), p(4, 0), p(5, 0)], muted: [0]),
+        make("A", .maj7, [p(1, 0), p(2, 2), p(3, 1), p(4, 2), p(5, 0)], muted: [0]),
+        make("D", .maj7, [p(2, 0), p(3, 2), p(4, 2), p(5, 2)], muted: [0, 1]),
+        make("F", .maj7, [p(2, 3), p(3, 2), p(4, 1), p(5, 0)], muted: [0, 1]),
+        make("G", .maj7, [p(0, 3), p(1, 2), p(2, 0), p(3, 0), p(4, 0), p(5, 2)]),
+        make("E", .maj7, [p(0, 0), p(1, 2), p(2, 1), p(3, 1), p(4, 0), p(5, 0)]),
+    ]
+    private static let sus2s: [Chord] = [
+        make("A", .sus2, [p(1, 0), p(2, 2), p(3, 2), p(4, 0), p(5, 0)], muted: [0]),
+        make("D", .sus2, [p(2, 0), p(3, 2), p(4, 3), p(5, 0)], muted: [0, 1]),
+    ]
+    private static let sus4s: [Chord] = [
+        make("A", .sus4, [p(1, 0), p(2, 2), p(3, 2), p(4, 3), p(5, 0)], muted: [0]),
+        make("D", .sus4, [p(2, 0), p(3, 2), p(4, 3), p(5, 3)], muted: [0, 1]),
+        make("E", .sus4, [p(0, 0), p(1, 2), p(2, 2), p(3, 2), p(4, 0), p(5, 0)]),
+    ]
+
+    static let all: [Chord] = majors + minors + dom7s + min7s + maj7s + sus2s + sus4s
+
+    /// Chords filtered by quality (nil = all).
+    static func chords(quality: ChordQuality?) -> [Chord] {
+        guard let quality else { return all }
+        return all.filter { $0.quality == quality }
+    }
 }

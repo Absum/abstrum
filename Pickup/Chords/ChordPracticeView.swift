@@ -26,7 +26,7 @@ struct ChordPracticeView: View {
                     .font(.custom("Rajdhani-SemiBold", size: 96))
                     .foregroundStyle(model.matched ? Theme.teal : .white)
                     .shadow(color: model.matched ? Theme.teal.opacity(0.8) : .clear, radius: 24)
-                Text(chord.quality.uppercased())
+                Text(chord.quality.label.uppercased())
                     .font(Theme.light(13)).tracking(5).foregroundStyle(Theme.frost.opacity(0.7))
 
                 FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings)
