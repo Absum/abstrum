@@ -39,6 +39,7 @@ struct LessonView: View {
                     .frame(width: 236, height: 138)
                     .padding(.top, 14)
             }
+            hearItButton.padding(.top, 14)
             Spacer().frame(height: 10)
             detectedLine
             Spacer()
@@ -105,6 +106,20 @@ struct LessonView: View {
         }
         .animation(.snappy, value: inTune)
         .animation(.snappy, value: model.currentStep.id)
+    }
+
+    private var hearItButton: some View {
+        Button { model.playExample() } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "speaker.wave.2.fill").font(.system(size: 14, weight: .semibold))
+                Text("HEAR IT").font(Theme.display(15)).tracking(3)
+            }
+            .foregroundStyle(Theme.frost)
+            .padding(.horizontal, 20).frame(height: 42)
+            .background(Capsule().fill(.white.opacity(0.08)))
+            .overlay(Capsule().stroke(.white.opacity(0.16), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private var detectedLine: some View {

@@ -14,6 +14,19 @@ struct Chord: Identifiable, Hashable {
     let pitchClasses: Set<Int>      // detection template (0 = C … 11 = B)
 }
 
+extension Chord {
+    /// The actual sounding pitches (Hz) of the chord's strings, low to high.
+    var frequencies: [Double] {
+        let ordered = positions.sorted { $0.string < $1.string }
+        var result: [Double] = []
+        for p in ordered {
+            let openHz = GuitarTuning.standard[p.string].frequency
+            result.append(openHz * pow(2.0, Double(p.fret) / 12.0))
+        }
+        return result
+    }
+}
+
 enum ChordMatcher {
     /// Cosine similarity between a 12-bin chroma vector and a chord's
     /// pitch-class template (1 at chord tones). 0…1; higher = better match.

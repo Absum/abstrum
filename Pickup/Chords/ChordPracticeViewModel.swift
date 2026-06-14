@@ -15,7 +15,10 @@ final class ChordPracticeViewModel {
     var listening = false
     var permissionDenied = false
 
+    var isPlayingExample = false
+
     private let audio = AudioEngine()
+    private let player = TonePlayer()
     private var chordEngine: ChordEngine?
     private var holdFrames = 0
     private let holdRequired = 3
@@ -49,6 +52,25 @@ final class ChordPracticeViewModel {
         matched = false
         holdFrames = 0
         score = 0
+    }
+
+    /// Play the chord as an example; pause the mic so it isn't self-detected.
+    func playExample() {
+        guard !isPlayingExample else { return }
+        isPlayingExample = true
+        audio.stop()
+        player.onFinished = { [weak self] in
+            guard let self else { return }
+            self.isPlayingExample = false
+            if self.listening { try? self.resumeListening() }
+        }
+        player.playChord(chord.frequencies)
+    }
+
+    private func resumeListening() throws {
+        // listening flag is already true; just restart capture.
+        let engine = audio
+        try engine.start()
     }
 
     // Runs on the audio thread; computes chroma off the main thread, then

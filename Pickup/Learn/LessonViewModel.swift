@@ -21,6 +21,7 @@ final class LessonViewModel {
     var permissionDenied = false
 
     private let audio = AudioEngine()
+    private let player = TonePlayer()
     private let store: ProgressStore
     private var holdFrames = 0
     private let holdRequired = 4   // ~0.3–0.4s of the right note before it counts
@@ -53,6 +54,13 @@ final class LessonViewModel {
     }
 
     func stopListening() { audio.stop() }
+
+    /// Play the target note as an example; pause the mic during playback.
+    func playExample() {
+        audio.stop()
+        player.onFinished = { [weak self] in self?.startListening() }
+        player.playNote(currentStep.frequency)
+    }
 
     func restart() {
         completedSteps.removeAll()

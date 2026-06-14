@@ -70,6 +70,7 @@ targets:
       - path: Pickup/Learn/Lesson.swift
       - path: Pickup/Learn/ProgressStore.swift
       - path: Pickup/Chords/Chord.swift
+      - path: Pickup/Audio/ToneSynth.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

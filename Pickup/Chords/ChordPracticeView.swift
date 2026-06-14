@@ -33,7 +33,9 @@ struct ChordPracticeView: View {
                     .frame(width: 250, height: 156)
                     .padding(.top, 18)
 
-                Spacer().frame(height: 24)
+                hearItButton.padding(.top, 18)
+
+                Spacer().frame(height: 22)
                 matchMeter.padding(.horizontal, 40)
                 statusLine.padding(.top, 14)
                 Spacer()
@@ -59,6 +61,20 @@ struct ChordPracticeView: View {
             Color.clear.frame(width: 40, height: 40)
         }
         .padding(.horizontal, 20)
+    }
+
+    private var hearItButton: some View {
+        Button { model.playExample() } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "speaker.wave.2.fill").font(.system(size: 15, weight: .semibold))
+                Text("HEAR IT").font(Theme.display(16)).tracking(3)
+            }
+            .foregroundStyle(Theme.frost)
+            .padding(.horizontal, 22).frame(height: 46)
+            .background(Capsule().fill(.white.opacity(0.08)))
+            .overlay(Capsule().stroke(.white.opacity(0.16), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private var matchMeter: some View {
