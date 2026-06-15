@@ -18,10 +18,14 @@ final class PlayAlongViewModel {
     var currentBarHit = false
     var hits = 0
     var permissionDenied = false
+    var isPreviewing = false
 
     private let audio = AudioEngine()
+    private let preview = TonePlayer()
     private var chordEngine: ChordEngine?
     private var beatTimer: Timer?
+    private var previewTimer: Timer?
+    private var previewBar = 0
     private let threshold = AudioSettings.shared.chordMatchThreshold
     private var holdFrames = 0
     private let holdRequired = 2
@@ -31,6 +35,7 @@ final class PlayAlongViewModel {
         audio.detectsPitch = false
         audio.enableClickPlayback = true
         audio.onSamples = { [weak self] samples, sr in self?.process(samples, sr) }
+        preview.keepAlive = true
     }
 
     var bars: [Chord] { song.bars }
@@ -41,12 +46,44 @@ final class PlayAlongViewModel {
 
     func toggle() { isPlaying ? stop() : start() }
 
+    // MARK: - Preview (listen first; playback only, no mic)
+
+    func togglePreview() { isPreviewing ? stopPreview() : startPreview() }
+
+    private func startPreview() {
+        guard !isPlaying, !bars.isEmpty else { return }
+        finished = false
+        isPreviewing = true
+        previewBar = 0
+        beatInBar = 0
+        playPreviewBar()
+    }
+
+    private func playPreviewBar() {
+        guard isPreviewing, previewBar < bars.count else { stopPreview(); return }
+        barIndex = previewBar
+        preview.playChord(bars[previewBar].frequencies)
+        let barDuration = Double(song.beatsPerBar) * 60.0 / Double(song.bpm)
+        previewTimer = Timer.scheduledTimer(withTimeInterval: barDuration, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.previewBar += 1
+            self.playPreviewBar()
+        }
+    }
+
+    private func stopPreview() {
+        previewTimer?.invalidate(); previewTimer = nil
+        preview.stop()
+        isPreviewing = false
+    }
+
     func restart() {
         finished = false
         start()
     }
 
     private func start() {
+        if isPreviewing { stopPreview() }
         AVAudioApplication.requestRecordPermission { [weak self] granted in
             DispatchQueue.main.async {
                 guard let self else { return }

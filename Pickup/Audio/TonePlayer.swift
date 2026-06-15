@@ -8,6 +8,8 @@ import AVFoundation
 final class TonePlayer {
     /// Called on the main queue when playback finishes (engine already stopped).
     var onFinished: (() -> Void)?
+    /// Keep the engine running between strums (for a sequence like a song preview).
+    var keepAlive = false
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
@@ -40,8 +42,9 @@ final class TonePlayer {
         player.stop()
         player.scheduleBuffer(buffer, at: nil, options: [.interrupts]) { [weak self] in
             DispatchQueue.main.async {
-                self?.stop()
-                self?.onFinished?()
+                guard let self else { return }
+                if !self.keepAlive { self.stop() }
+                self.onFinished?()
             }
         }
         player.play()

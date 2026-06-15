@@ -106,7 +106,11 @@ private struct PlayAlongRunner: View {
             Spacer().frame(height: 10)
             nextHint
             Spacer()
-            controlButton.padding(.horizontal, 30).padding(.bottom, 18)
+            VStack(spacing: 10) {
+                if !model.isPlaying { listenButton }
+                controlButton
+            }
+            .padding(.horizontal, 30).padding(.bottom, 18)
         }
     }
 
@@ -171,12 +175,28 @@ private struct PlayAlongRunner: View {
             .font(Theme.title(15)).tracking(3).foregroundStyle(Theme.frost.opacity(0.7))
     }
 
+    private var listenButton: some View {
+        Button(action: model.togglePreview) {
+            HStack(spacing: 10) {
+                Image(systemName: model.isPreviewing ? "stop.fill" : "speaker.wave.2.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                Text(model.isPreviewing ? "STOP PREVIEW" : "LISTEN FIRST")
+                    .font(Theme.display(17)).tracking(2)
+            }
+            .frame(maxWidth: .infinity).frame(height: 50)
+            .foregroundStyle(Theme.frost)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.08)))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.white.opacity(0.16), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var controlButton: some View {
         Button(action: model.toggle) {
             HStack(spacing: 12) {
                 Image(systemName: model.isPlaying ? "stop.fill" : "play.fill")
                     .font(.system(size: 18, weight: .semibold))
-                Text(model.isPlaying ? "STOP" : "PLAY")
+                Text(model.isPlaying ? "STOP" : "PLAY ALONG")
                     .font(Theme.display(21)).tracking(4)
             }
             .frame(maxWidth: .infinity).frame(height: 62)
@@ -186,8 +206,10 @@ private struct PlayAlongRunner: View {
                     .fill(model.isPlaying ? AnyShapeStyle(.white.opacity(0.10)) : AnyShapeStyle(Theme.teal))
             }
             .shadow(color: model.isPlaying ? .clear : Theme.teal.opacity(0.5), radius: 16, y: 6)
+            .opacity(model.isPreviewing ? 0.4 : 1)
         }
         .buttonStyle(.plain)
+        .disabled(model.isPreviewing)
     }
 
     private var results: some View {
