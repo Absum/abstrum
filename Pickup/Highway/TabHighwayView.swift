@@ -1,0 +1,211 @@
+//
+//  TabHighwayView.swift
+//  Falling-note highway: fret markers scroll down 6 string lanes to a strike
+//  line; the pitch engine lights the ones you hit.
+//
+
+import SwiftUI
+
+struct TabHighwayView: View {
+    let onClose: () -> Void
+    @State private var track: HighwayTrack?
+
+    var body: some View {
+        ZStack {
+            ArcticBackground()
+            if let track {
+                HighwayRunner(track: track) { self.track = nil }
+                    .id(track.id)
+            } else {
+                menu
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            #if DEBUG
+            if let id = ProcessInfo.processInfo.environment["PICKUP_HIGHWAY"],
+               let match = HighwayLibrary.all.first(where: { $0.id == id }) {
+                track = match
+            }
+            #endif
+        }
+    }
+
+    private var menu: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button(action: onClose) {
+                    Image(systemName: "xmark").font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Theme.frost.opacity(0.85))
+                        .frame(width: 40, height: 40).background(Circle().fill(.white.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+                Spacer()
+                Text("TAB HIGHWAY").font(Theme.display(18)).tracking(4).foregroundStyle(.white)
+                Spacer()
+                Color.clear.frame(width: 40, height: 40)
+            }
+            .padding(.horizontal, 20).padding(.top, 12)
+
+            ScrollView {
+                VStack(spacing: 14) {
+                    ForEach(HighwayLibrary.all) { item in
+                        Button { track = item } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.title).font(Theme.display(22)).foregroundStyle(.white)
+                                    Text("\(item.credit) · \(item.bpm) BPM").font(Theme.body(13))
+                                        .foregroundStyle(Theme.frost.opacity(0.65))
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").foregroundStyle(Theme.frost.opacity(0.5))
+                            }
+                            .padding(18)
+                            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.06)))
+                            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.12), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 22).padding(.top, 22)
+            }
+        }
+    }
+}
+
+private struct HighwayRunner: View {
+    @State private var model: TabHighwayViewModel
+    let onBack: () -> Void
+
+    private let stringLabels = ["E", "A", "D", "G", "B", "e"]
+    private let speed: CGFloat = 170     // points per second
+
+    init(track: HighwayTrack, onBack: @escaping () -> Void) {
+        _model = State(initialValue: TabHighwayViewModel(track: track))
+        self.onBack = onBack
+    }
+
+    var body: some View {
+        ZStack {
+            if model.finished { results } else { runner }
+        }
+        .onDisappear { if model.isPlaying { model.toggle() } }
+    }
+
+    private var runner: some View {
+        VStack(spacing: 0) {
+            topBar.padding(.top, 12)
+            highway
+            controlButton.padding(.horizontal, 30).padding(.bottom, 18)
+        }
+    }
+
+    private var topBar: some View {
+        HStack {
+            Button(action: onBack) {
+                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Theme.frost.opacity(0.85))
+                    .frame(width: 40, height: 40).background(Circle().fill(.white.opacity(0.08)))
+            }
+            .buttonStyle(.plain)
+            Spacer()
+            VStack(spacing: 2) {
+                Text(model.track.title.uppercased()).font(Theme.display(16)).tracking(2).foregroundStyle(.white)
+                Text("\(model.hits) / \(model.total) HIT").font(Theme.light(11)).tracking(2)
+                    .foregroundStyle(Theme.frost.opacity(0.6))
+            }
+            Spacer()
+            Color.clear.frame(width: 40, height: 40)
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private var highway: some View {
+        Canvas { ctx, size in
+            let lanes = 6
+            let laneW = size.width / CGFloat(lanes)
+            let strikeY = size.height * 0.84
+            func laneX(_ s: Int) -> CGFloat { laneW * (CGFloat(s) + 0.5) }
+
+            // Lanes
+            for s in 0..<lanes {
+                var p = Path()
+                p.move(to: CGPoint(x: laneX(s), y: 0))
+                p.addLine(to: CGPoint(x: laneX(s), y: size.height))
+                ctx.stroke(p, with: .color(.white.opacity(0.08)), lineWidth: 1)
+            }
+            // Strike line
+            var strike = Path()
+            strike.move(to: CGPoint(x: 0, y: strikeY))
+            strike.addLine(to: CGPoint(x: size.width, y: strikeY))
+            ctx.stroke(strike, with: .color(Theme.teal.opacity(0.9)), lineWidth: 2)
+            // String labels below the strike line
+            for s in 0..<lanes {
+                ctx.draw(Text(stringLabels[s]).font(Theme.light(12)).foregroundColor(Theme.frost.opacity(0.5)),
+                         at: CGPoint(x: laneX(s), y: strikeY + 18))
+            }
+
+            // Notes
+            let r: CGFloat = min(laneW * 0.34, 22)
+            for note in model.notes {
+                let y = strikeY - CGFloat(model.seconds(of: note) - model.currentTime) * speed
+                if y < -r * 2 || y > strikeY + r { continue }
+                let x = laneX(note.string)
+                let hit = model.hitIDs.contains(note.id)
+                let missed = model.seconds(of: note) < model.currentTime - 0.32 && !hit
+                let color: Color = hit ? Theme.teal : (missed ? Theme.frost.opacity(0.22) : Theme.cyan)
+                let rect = CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)
+                ctx.fill(Path(ellipseIn: rect), with: .color(color))
+                ctx.draw(Text("\(note.fret)").font(Theme.display(16)).foregroundColor(Color(hex: 0x06222A)),
+                         at: CGPoint(x: x, y: y))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var controlButton: some View {
+        Button(action: model.toggle) {
+            HStack(spacing: 12) {
+                Image(systemName: model.isPlaying ? "stop.fill" : "play.fill").font(.system(size: 18, weight: .semibold))
+                Text(model.isPlaying ? "STOP" : "START").font(Theme.display(21)).tracking(4)
+            }
+            .frame(maxWidth: .infinity).frame(height: 62)
+            .foregroundStyle(model.isPlaying ? Theme.frost : Color(hex: 0x06222A))
+            .background {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(model.isPlaying ? AnyShapeStyle(.white.opacity(0.10)) : AnyShapeStyle(Theme.teal))
+            }
+            .shadow(color: model.isPlaying ? .clear : Theme.teal.opacity(0.5), radius: 16, y: 6)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var results: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "star.fill").font(.system(size: 64)).foregroundStyle(Theme.teal)
+                .shadow(color: Theme.teal.opacity(0.6), radius: 20)
+            Text("\(model.hits) / \(model.total)")
+                .font(.custom("Rajdhani-SemiBold", size: 72)).foregroundStyle(.white)
+            Text("NOTES HIT").font(Theme.light(12)).tracking(4).foregroundStyle(Theme.frost.opacity(0.7))
+            VStack(spacing: 12) {
+                Button { model.restart() } label: {
+                    Text("PLAY AGAIN").font(Theme.display(18)).tracking(3)
+                        .frame(maxWidth: .infinity).frame(height: 56)
+                        .foregroundStyle(Color(hex: 0x06222A))
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.teal))
+                }
+                .buttonStyle(.plain)
+                Button(action: onBack) {
+                    Text("TRACKS").font(Theme.display(18)).tracking(3)
+                        .frame(maxWidth: .infinity).frame(height: 56)
+                        .foregroundStyle(.white)
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.10)))
+                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.16), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 40).padding(.top, 12)
+        }
+        .padding()
+    }
+}
