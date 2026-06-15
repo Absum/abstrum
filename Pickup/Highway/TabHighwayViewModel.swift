@@ -170,6 +170,8 @@ final class TabHighwayViewModel {
         audio.stop()
         isPlaying = false
         finished = true
+        ProgressStore.shared.awardXP(5 + hits * 2)
+        ProgressStore.shared.addPracticeTime(Int(max(0, currentTime)))
     }
 
     private func handle(_ result: AudioEngine.Result?) {
