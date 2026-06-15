@@ -88,7 +88,7 @@ struct ChordsView: View {
                 Spacer()
                 Text(chord.quality.label).font(Theme.body(12)).foregroundStyle(Theme.frost.opacity(0.6))
             }
-            FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings)
+            FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings, barre: chord.barre)
                 .frame(height: 110)
         }
         .padding(16)

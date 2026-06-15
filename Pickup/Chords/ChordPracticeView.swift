@@ -29,7 +29,7 @@ struct ChordPracticeView: View {
                 Text(chord.quality.label.uppercased())
                     .font(Theme.light(13)).tracking(5).foregroundStyle(Theme.frost.opacity(0.7))
 
-                FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings)
+                FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings, barre: chord.barre)
                     .frame(width: 250, height: 156)
                     .padding(.top, 18)
 
