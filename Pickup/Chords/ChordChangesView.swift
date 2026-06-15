@@ -56,7 +56,10 @@ struct ChordChangesView: View {
                     ForEach(ChordProgressions.all) { prog in
                         Button { progression = prog } label: {
                             HStack {
-                                Text(prog.name).font(Theme.display(22)).foregroundStyle(.white)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(prog.name).font(Theme.display(22)).foregroundStyle(.white)
+                                    Text(prog.subtitle).font(Theme.body(13)).foregroundStyle(Theme.frost.opacity(0.65))
+                                }
                                 Spacer()
                                 Image(systemName: "chevron.right").foregroundStyle(Theme.frost.opacity(0.5))
                             }

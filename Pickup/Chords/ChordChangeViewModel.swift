@@ -28,10 +28,12 @@ final class ChordChangeViewModel {
     private let threshold = AudioSettings.shared.chordMatchThreshold
     private var beatTimer: Timer?
     private var secondTimer: Timer?
+    private var beat = 0
 
     init(progression: ChordProgression) {
         self.progression = progression
         audio.detectsPitch = false
+        audio.enableClickPlayback = true
         audio.onSamples = { [weak self] samples, sr in self?.process(samples, sr) }
     }
 
@@ -65,9 +67,13 @@ final class ChordChangeViewModel {
     }
 
     private func startTimers() {
+        beat = 0
         let interval = 60.0 / Double(bpm)
         beatTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            self?.pulse.toggle()
+            guard let self else { return }
+            self.audio.playClick(accent: self.beat % 4 == 0)
+            self.pulse.toggle()
+            self.beat += 1
         }
         secondTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.seconds += 1

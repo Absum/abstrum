@@ -20,18 +20,30 @@ final class AudioEngine {
     var onSamples: (([Float], Double) -> Void)?
     /// Skip monophonic pitch detection (e.g. when only chroma is needed).
     var detectsPitch = true
+    /// Run full-duplex (.playAndRecord) so a metronome click can play while the
+    /// mic is capturing — used by chord-change practice.
+    var enableClickPlayback = false
 
     private let engine = AVAudioEngine()
     private var pitch: PitchEngine?
     private var currentSampleRate: Double = 44_100
     private let bufferSize: AVAudioFrameCount = 4096
 
+    private let clickPlayer = AVAudioPlayerNode()
+    private var clickAttached = false
+    private var accentClick: AVAudioPCMBuffer?
+    private var normalClick: AVAudioPCMBuffer?
+
     var isRunning: Bool { engine.isRunning }
 
     func start() throws {
         let session = AVAudioSession.sharedInstance()
-        // .measurement disables AGC / echo cancellation that would distort pitch.
-        try session.setCategory(.record, mode: .measurement, options: [])
+        if enableClickPlayback {
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+        } else {
+            // .measurement disables AGC / echo cancellation that would distort pitch.
+            try session.setCategory(.record, mode: .measurement, options: [])
+        }
         try session.setPreferredIOBufferDuration(0.01)
         try session.setActive(true)
 
@@ -45,8 +57,38 @@ final class AudioEngine {
             self?.process(buffer)
         }
 
+        if enableClickPlayback {
+            let clickFormat = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
+            if !clickAttached { engine.attach(clickPlayer); clickAttached = true }
+            engine.connect(clickPlayer, to: engine.mainMixerNode, format: clickFormat)
+            accentClick = Self.makeClick(frequency: 1760, format: clickFormat)
+            normalClick = Self.makeClick(frequency: 1200, format: clickFormat)
+        }
+
         engine.prepare()
         try engine.start()
+        if enableClickPlayback { clickPlayer.play() }
+    }
+
+    /// Play a metronome click (only when enableClickPlayback was set before start).
+    func playClick(accent: Bool) {
+        guard enableClickPlayback, engine.isRunning else { return }
+        if let buffer = accent ? accentClick : normalClick {
+            clickPlayer.scheduleBuffer(buffer, at: nil, options: [.interrupts], completionHandler: nil)
+        }
+    }
+
+    private static func makeClick(frequency: Double, format: AVAudioFormat) -> AVAudioPCMBuffer {
+        let sampleRate = format.sampleRate
+        let frames = AVAudioFrameCount(sampleRate * 0.05)
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames)!
+        buffer.frameLength = frames
+        let samples = buffer.floatChannelData![0]
+        for i in 0..<Int(frames) {
+            let t = Double(i) / sampleRate
+            samples[i] = Float(sin(2.0 * .pi * frequency * t) * exp(-t * 35.0) * 0.5)
+        }
+        return buffer
     }
 
     func stop() {
