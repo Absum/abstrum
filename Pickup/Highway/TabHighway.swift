@@ -11,6 +11,7 @@ struct HighwayNote: Identifiable, Hashable {
     let string: Int      // 0 = low E … 5 = high e
     let fret: Int
     let frequency: Double
+    var duration: Double = 1   // length in beats
 }
 
 struct HighwayTrack: Identifiable, Hashable {
@@ -23,26 +24,37 @@ struct HighwayTrack: Identifiable, Hashable {
 }
 
 enum HighwayLibrary {
-    private static func note(_ id: Int, beat: Double, string: Int, fret: Int) -> HighwayNote {
+    private static func note(_ id: Int, beat: Double, string: Int, fret: Int, duration: Double) -> HighwayNote {
         let freq = GuitarTuning.standard[string].frequency * pow(2.0, Double(fret) / 12.0)
-        return HighwayNote(id: id, beat: beat, string: string, fret: fret, frequency: freq)
+        return HighwayNote(id: id, beat: beat, string: string, fret: fret, frequency: freq, duration: duration)
     }
 
-    /// Build highway notes (one quarter-note per step) — used by song import.
-    static func notes(from steps: [(string: Int, fret: Int)]) -> [HighwayNote] {
-        steps.enumerated().map { i, step in
-            note(i, beat: Double(i), string: min(5, max(0, step.string)), fret: max(0, step.fret))
+    /// Build highway notes from rhythmic steps (string < 0 = rest), accumulating
+    /// the start beat from each step's duration. Used by song import.
+    static func notes(fromRhythm steps: [(string: Int, fret: Int, beats: Double)]) -> [HighwayNote] {
+        var result: [HighwayNote] = []
+        var beat = 0.0
+        var id = 0
+        for step in steps {
+            let beats = max(0.0625, step.beats)
+            if step.string >= 0 {
+                result.append(note(id, beat: beat,
+                                   string: min(5, max(0, step.string)), fret: max(0, step.fret),
+                                   duration: beats))
+                id += 1
+            }
+            beat += beats
         }
+        return result
     }
 
     /// One quarter-note per step: (string, fret).
     private static func track(id: String, title: String, credit: String, bpm: Int,
                               steps: [(Int, Int)], repeats: Int = 1, licensed: Bool = false) -> HighwayTrack {
         let full = Array(repeating: steps, count: max(1, repeats)).flatMap { $0 }
-        let notes = full.enumerated().map { i, step in
-            note(i, beat: Double(i), string: step.0, fret: step.1)
-        }
-        return HighwayTrack(id: id, title: title, credit: credit, bpm: bpm, notes: notes, licensed: licensed)
+        let rhythm = full.map { (string: $0.0, fret: $0.1, beats: 1.0) }
+        return HighwayTrack(id: id, title: title, credit: credit, bpm: bpm,
+                            notes: notes(fromRhythm: rhythm), licensed: licensed)
     }
 
     private static let publicDomain: [HighwayTrack] = [

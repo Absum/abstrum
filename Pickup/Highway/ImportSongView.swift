@@ -23,9 +23,15 @@ struct ImportSongView: View {
         _tab = State(initialValue: editing.map { Self.tokens(from: $0.steps) } ?? "")
     }
 
-    /// Rebuild the "string:fret" token text from stored steps (for editing).
+    /// Rebuild the token text from stored steps (for editing), including rhythm.
     private static func tokens(from steps: [[Int]]) -> String {
-        steps.map { "\(6 - $0[0]):\($0[1])" }.joined(separator: " ")
+        steps.map { s -> String in
+            let sixteenths = s.count > 2 ? s[2] : 4
+            let letter = TabImport.letter(forBeats: Double(sixteenths) / 4.0)
+            let suffix = letter == "q" ? "" : letter
+            return s[0] < 0 ? "r" + suffix : "\(6 - s[0]):\(s[1])" + suffix
+        }
+        .joined(separator: " ")
     }
 
     var body: some View {
@@ -47,7 +53,7 @@ struct ImportSongView: View {
 
                     field("TAB") {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("string:fret per note — string 1 = high e … 6 = low E.\nExample: 1:0 1:0 1:1 1:3")
+                            Text("string:fret per note — string 1 = high e … 6 = low E.\nAdd a value for rhythm: q quarter, e eighth, h half, s 16th ('.' = dotted). Rest = r.\nExample: 1:0e 1:0e 1:1q  rq")
                                 .font(Theme.body(12)).foregroundStyle(Theme.frost.opacity(0.6))
                             TextEditor(text: $tab)
                                 .frame(height: 150)
@@ -97,8 +103,8 @@ struct ImportSongView: View {
     private var importButton: some View {
         Button {
             let steps = TabImport.parse(tab)
-            guard !steps.isEmpty else {
-                error = "No valid notes found. Use string:fret tokens like 1:0 1:3."
+            guard steps.contains(where: { $0.string >= 0 }) else {
+                error = "No valid notes found. Use tokens like 1:0 1:3 (add q/e/h for rhythm)."
                 return
             }
             if let editing {

@@ -36,10 +36,14 @@ struct TabHighwayView: View {
                 showImport = true
             }
             if ProcessInfo.processInfo.environment["PICKUP_SEED_IMPORT"] != nil, imports.songs.isEmpty {
-                imports.add(title: "My Riff", bpm: 100, steps: [(5, 0), (5, 1), (5, 3), (4, 3), (4, 1)])
+                imports.add(title: "My Riff", bpm: 100,
+                            steps: [(5, 0, 0.5), (5, 1, 0.5), (5, 3, 1), (4, 3, 1), (4, 1, 2)])
             }
             if ProcessInfo.processInfo.environment["PICKUP_EDIT"] != nil {
                 editingSong = imports.songs.first
+            }
+            if ProcessInfo.processInfo.environment["PICKUP_PLAY_IMPORT"] != nil {
+                track = imports.tracks.first
             }
             #endif
         }
@@ -289,6 +293,14 @@ private struct HighwayRunner: View {
                 let hit = model.hitIDs.contains(note.id)
                 let missed = model.seconds(of: note) < model.currentTime - 0.32 && !hit
                 let color: Color = hit ? Theme.teal : (missed ? Theme.frost.opacity(0.22) : Theme.cyan)
+                // Sustain tail: longer notes trail upward (toward where they fell from).
+                let durSec = note.duration * 60.0 / Double(model.track.bpm) / max(0.25, model.speed)
+                let tailLen = CGFloat(durSec) * speed - 2 * r - 6
+                if tailLen > 4 {
+                    let tw = r * 0.75
+                    let tail = CGRect(x: x - tw, y: y - tailLen, width: 2 * tw, height: tailLen)
+                    ctx.fill(Path(roundedRect: tail, cornerRadius: tw), with: .color(color.opacity(0.45)))
+                }
                 let rect = CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)
                 ctx.fill(Path(ellipseIn: rect), with: .color(color))
                 ctx.draw(Text("\(note.fret)").font(Theme.display(16)).foregroundColor(Color(hex: 0x06222A)),

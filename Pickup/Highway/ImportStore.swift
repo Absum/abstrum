@@ -10,12 +10,15 @@ struct ImportedSong: Codable, Identifiable, Hashable {
     let id: String
     var title: String
     var bpm: Int
-    var steps: [[Int]]   // [internalString, fret] per beat
+    var steps: [[Int]]   // [internalString, fret, durationSixteenths]; string -1 = rest
 
     var track: HighwayTrack {
-        HighwayTrack(id: id, title: title, credit: "Imported", bpm: bpm,
-                     notes: HighwayLibrary.notes(from: steps.map { (string: $0[0], fret: $0[1]) }),
-                     licensed: false)
+        let rhythm = steps.map { s -> (string: Int, fret: Int, beats: Double) in
+            let sixteenths = s.count > 2 ? s[2] : 4          // default quarter (back-compat)
+            return (string: s[0], fret: s[1], beats: Double(sixteenths) / 4.0)
+        }
+        return HighwayTrack(id: id, title: title, credit: "Imported", bpm: bpm,
+                            notes: HighwayLibrary.notes(fromRhythm: rhythm), licensed: false)
     }
 }
 
@@ -36,22 +39,27 @@ final class ImportStore {
 
     var tracks: [HighwayTrack] { songs.map { $0.track } }
 
-    func add(title: String, bpm: Int, steps: [(string: Int, fret: Int)]) {
-        guard !steps.isEmpty else { return }
+    private func encode(_ steps: [(string: Int, fret: Int, beats: Double)]) -> [[Int]] {
+        steps.map { [$0.string, $0.fret, Int(($0.beats * 4).rounded())] }
+    }
+
+    func add(title: String, bpm: Int, steps: [(string: Int, fret: Int, beats: Double)]) {
+        guard steps.contains(where: { $0.string >= 0 }) else { return }
         let song = ImportedSong(id: "import-\(UUID().uuidString)",
                                 title: title.isEmpty ? "My Song" : title,
                                 bpm: max(30, min(240, bpm)),
-                                steps: steps.map { [$0.string, $0.fret] })
+                                steps: encode(steps))
         songs.append(song)
         save()
     }
 
-    func update(id: String, title: String, bpm: Int, steps: [(string: Int, fret: Int)]) {
-        guard !steps.isEmpty, let idx = songs.firstIndex(where: { $0.id == id }) else { return }
+    func update(id: String, title: String, bpm: Int, steps: [(string: Int, fret: Int, beats: Double)]) {
+        guard steps.contains(where: { $0.string >= 0 }),
+              let idx = songs.firstIndex(where: { $0.id == id }) else { return }
         songs[idx] = ImportedSong(id: id,
                                   title: title.isEmpty ? "My Song" : title,
                                   bpm: max(30, min(240, bpm)),
-                                  steps: steps.map { [$0.string, $0.fret] })
+                                  steps: encode(steps))
         save()
     }
 
