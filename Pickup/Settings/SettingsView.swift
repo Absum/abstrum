@@ -4,10 +4,15 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct SettingsView: View {
     @State private var settings = AudioSettings.shared
     @State private var reminders = ReminderScheduler.shared
+    #if DEBUG
+    @State private var showResetConfirm = false
+    @State private var didReset = false
+    #endif
 
     // Mic sensitivity 0…1 maps (inverted) to the RMS gate: higher = lower gate.
     private let gateMin: Double = 0.0008   // most sensitive
@@ -41,6 +46,9 @@ struct SettingsView: View {
                                    left: "Loose", right: "Strict")
                         resetButton
                         footnote
+                        #if DEBUG
+                        devCard
+                        #endif
                     }
                     .padding(.horizontal, 22)
                     .padding(.top, 24)
@@ -48,7 +56,52 @@ struct SettingsView: View {
             }
         }
         .preferredColorScheme(.dark)
+        #if DEBUG
+        .alert("Reset all data?", isPresented: $showResetConfirm) {
+            Button("Reset", role: .destructive) { resetAllData() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Clears progress, streak, XP, onboarding, and settings to a fresh-install state. Imported highway songs are kept. Relaunch to see onboarding again.")
+        }
+        #endif
     }
+
+    #if DEBUG
+    private var devCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("DEVELOPER").font(Theme.display(18)).tracking(2).foregroundStyle(.white)
+            Text(didReset
+                 ? "Done. Relaunch the app to see onboarding from scratch."
+                 : "Reset progress, streak, onboarding, and settings to a fresh install. Imported songs are kept.")
+                .font(Theme.body(13)).foregroundStyle(didReset ? Theme.teal : Theme.frost.opacity(0.65))
+            Button { showResetConfirm = true } label: {
+                Text("RESET ALL DATA").font(Theme.display(16)).tracking(2)
+                    .foregroundStyle(Color(hex: 0xF4B860))
+                    .frame(maxWidth: .infinity).frame(height: 50)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: 0xC2410C).opacity(0.18)))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color(hex: 0xF4B860).opacity(0.4), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(18)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white.opacity(0.06)))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.12), lineWidth: 1))
+    }
+
+    /// Fresh-install state for QA — everything except imported songs (a separate
+    /// store) and the audio core.
+    private func resetAllData() {
+        ProgressStore.shared.reset()
+        settings.resetToDefaults()
+        let defaults = UserDefaults.standard
+        for key in ["didOnboarding", "reminderEnabled", "reminderHour",
+                    "reminderMinute", "showFingerNumbers"] {
+            defaults.removeObject(forKey: key)
+        }
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        didReset = true
+    }
+    #endif
 
     private var header: some View {
         VStack(spacing: 3) {
