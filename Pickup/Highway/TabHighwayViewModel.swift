@@ -16,6 +16,8 @@ final class TabHighwayViewModel {
     var finished = false
     var hitIDs: Set<Int> = []
     var permissionDenied = false
+    /// User-facing reason the last Start attempt failed (nil = no error).
+    var lastError: String?
     /// Playback speed multiplier (scales tempo: lower = slower / easier).
     var speed: Double = 1.0
     /// Most recent hit time per string lane, for the strike-line flash.
@@ -29,6 +31,7 @@ final class TabHighwayViewModel {
     private let preview = TonePlayer()
     private var playedIDs: Set<Int> = []
     private var lastTick: Date?
+    private var lastClickBeat = Int.min
     private var clock: Timer?
     private let hitWindow = 0.30      // seconds around a note's strike time
     private let centsTolerance = 60.0
@@ -36,6 +39,7 @@ final class TabHighwayViewModel {
     init(track: HighwayTrack) {
         self.track = track
         audio.onResult = { [weak self] in self?.handle($0) }
+        audio.enableClickPlayback = true   // metronome click + count-in during play
         preview.keepAlive = true
     }
 
@@ -72,17 +76,34 @@ final class TabHighwayViewModel {
     }
 
     private func start() {
+        lastError = nil
         if isPreviewing { stopPreview() }
+        // Make sure the Listen engine isn't holding the playback session — on a
+        // real device the mic's .record session won't activate over a live one.
+        preview.stop()
         AVAudioApplication.requestRecordPermission { [weak self] granted in
             DispatchQueue.main.async {
                 guard let self else { return }
-                guard granted else { self.permissionDenied = true; return }
-                do { try self.audio.start() } catch { return }
+                guard granted else {
+                    self.permissionDenied = true
+                    self.lastError = "Microphone access is off — enable it in Settings › Pickup."
+                    return
+                }
+                // Release any active (e.g. leftover Listen) session before switching
+                // categories, otherwise activating .record can fail on device.
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+                do { try self.audio.start() }
+                catch {
+                    self.lastError = "Couldn't start the mic: \(error.localizedDescription)"
+                    print("Pickup.highway: audio start failed — \(error)")
+                    return
+                }
                 self.hitIDs = []
                 self.flashes = [:]
                 self.finished = false
                 self.currentTime = -2.0          // lead-in before the first note
                 self.lastTick = nil
+                self.lastClickBeat = .min
                 self.isPlaying = true
                 self.startClock()
             }
@@ -131,6 +152,16 @@ final class TabHighwayViewModel {
         } else {
             currentTime += dt
         }
+
+        // Metronome: click on each beat boundary (accent the downbeat). Negative
+        // time covers the count-in before the first note arrives.
+        let beatInterval = 60.0 / Double(track.bpm) / max(0.25, speed)
+        let beat = Int(floor(currentTime / beatInterval))
+        if beat > lastClickBeat {
+            lastClickBeat = beat
+            audio.playClick(accent: ((beat % 4) + 4) % 4 == 0)
+        }
+
         if currentTime > endTime { finish() }
     }
 

@@ -155,7 +155,22 @@ private struct HighwayRunner: View {
     var body: some View {
         ZStack {
             if model.finished { results } else { runner }
+            if let err = model.lastError {
+                VStack {
+                    Text(err)
+                        .font(Theme.title(13)).foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 18).padding(.vertical, 12)
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color(hex: 0xC2410C).opacity(0.95)))
+                        .padding(.horizontal, 24).padding(.top, 64)
+                        .onTapGesture { model.lastError = nil }
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
+        .animation(.easeInOut(duration: 0.2), value: model.lastError)
         .onDisappear {
             if model.isPlaying { model.toggle() }
             if model.isPreviewing { model.togglePreview() }
@@ -287,24 +302,37 @@ private struct HighwayRunner: View {
 
             // Notes
             for note in model.notes {
-                let y = strikeY - CGFloat(model.seconds(of: note) - model.currentTime) * speed
-                if y < -r * 2 || y > strikeY + r { continue }
+                let yHead = strikeY - CGFloat(model.seconds(of: note) - model.currentTime) * speed
+                let durSec = note.duration * 60.0 / Double(model.track.bpm) / max(0.25, model.speed)
+                let durPx = CGFloat(durSec) * speed
+                let yEnd = yHead - durPx              // end of the held note (above the head)
+                if yHead < -r || yEnd > size.height + r { continue }
+
                 let x = laneX(note.string)
                 let hit = model.hitIDs.contains(note.id)
                 let missed = model.seconds(of: note) < model.currentTime - 0.32 && !hit
                 let color: Color = hit ? Theme.teal : (missed ? Theme.frost.opacity(0.22) : Theme.cyan)
-                // Sustain tail: longer notes trail upward (toward where they fell from).
-                let durSec = note.duration * 60.0 / Double(model.track.bpm) / max(0.25, model.speed)
-                let tailLen = CGFloat(durSec) * speed - 2 * r - 6
-                if tailLen > 4 {
-                    let tw = r * 0.75
-                    let tail = CGRect(x: x - tw, y: y - tailLen, width: 2 * tw, height: tailLen)
-                    ctx.fill(Path(roundedRect: tail, cornerRadius: tw), with: .color(color.opacity(0.45)))
+
+                // Sustain tail — one capsule the same width and corner radius as the
+                // note, with its base at the bottom of the ball (not the centre) so it
+                // reads as the note itself extended upward; the ball is drawn on top,
+                // hiding the rounded base so only the far end shows its cap.
+                // A small gap at the top keeps back-to-back notes visually distinct.
+                let gap = min(durPx * 0.22, 28)
+                let tailTop = yEnd + gap
+                let tailBottom = yHead + r
+                if tailBottom - tailTop > 2 * r {
+                    let tail = CGRect(x: x - r, y: tailTop, width: 2 * r, height: tailBottom - tailTop)
+                    ctx.fill(Path(roundedRect: tail, cornerRadius: r), with: .color(color.opacity(0.5)))
                 }
-                let rect = CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)
-                ctx.fill(Path(ellipseIn: rect), with: .color(color))
-                ctx.draw(Text("\(note.fret)").font(Theme.display(16)).foregroundColor(Color(hex: 0x06222A)),
-                         at: CGPoint(x: x, y: y))
+
+                // Note ball — disappears once its head crosses the strike line.
+                if yHead <= strikeY + 1 {
+                    let ball = CGRect(x: x - r, y: yHead - r, width: 2 * r, height: 2 * r)
+                    ctx.fill(Path(ellipseIn: ball), with: .color(color))
+                    ctx.draw(Text("\(note.fret)").font(Theme.display(16)).foregroundColor(Color(hex: 0x06222A)),
+                             at: CGPoint(x: x, y: yHead))
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
