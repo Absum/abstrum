@@ -8,9 +8,25 @@ import XCTest
 final class CourseTests: XCTestCase {
 
     func testCoursesExist() {
-        XCTAssertEqual(CourseLibrary.all.count, 2)
+        XCTAssertEqual(CourseLibrary.all.count, 4)
         XCTAssertEqual(CourseLibrary.firstContact.lessons.count, 3)
         XCTAssertEqual(CourseLibrary.firstNotes.lessons.count, 2)
+        XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 5)
+        XCTAssertEqual(CourseLibrary.chordChanges.lessons.count, 3)
+    }
+
+    func testChordLessonsTargetChords() {
+        for lesson in CourseLibrary.firstChords.lessons {
+            XCTAssertFalse(lesson.steps.isEmpty)
+            XCTAssertTrue(lesson.steps.allSatisfy { $0.chord != nil })
+        }
+        XCTAssertEqual(LessonLibrary.chordA.steps.first?.chord?.id, "A")
+        XCTAssertEqual(LessonLibrary.changeEA.steps.compactMap { $0.chord?.id }, ["E", "A", "E", "A"])
+    }
+
+    func testChordCourseUnlockChain() {
+        XCTAssertFalse(CourseLibrary.isUnlocked(CourseLibrary.firstChords, completed: []))
+        XCTAssertTrue(CourseLibrary.isUnlocked(CourseLibrary.firstChords, completed: ["a-string-notes"]))
     }
 
     func testFirstCourseUnlocked() {

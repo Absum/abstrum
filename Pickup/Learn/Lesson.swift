@@ -15,11 +15,13 @@ struct FretPosition: Hashable {
 
 struct LessonStep: Identifiable, Hashable {
     let id: Int
-    let note: String          // "E"
+    let note: String          // "E" (or chord name for a chord step)
     let octaveLabel: String   // "E2"
-    let frequency: Double     // target Hz
+    let frequency: Double     // target Hz (0 for chord steps)
     let hint: String          // "6th string — low E"
     let position: FretPosition?
+    /// When set, this step is scored by chord (chroma) detection, not pitch.
+    var chord: Chord? = nil
 }
 
 struct Lesson: Identifiable, Hashable {
@@ -88,9 +90,57 @@ enum LessonLibrary {
         subtitle: "Open, 2nd & 3rd fret", tier: 1, prerequisite: "low-e-notes",
         steps: frettedSteps(string: 1, frets: [0, 2, 3]))
 
-    static let all: [Lesson] = [openStrings, stringSwitching, lowToHigh, lowENotes, aStringNotes]
+    // MARK: - Tier 1 — open chords (scored by chord detection)
+
+    static let chordA = Lesson(
+        id: "chord-a", title: "The A Chord", subtitle: "Three fingers, top five strings",
+        tier: 1, prerequisite: "a-string-notes", steps: chordSteps(["A", "A", "A"]))
+
+    static let chordE = Lesson(
+        id: "chord-e", title: "The E Chord", subtitle: "A full, ringing chord",
+        tier: 1, prerequisite: "chord-a", steps: chordSteps(["E", "E", "E"]))
+
+    static let chordD = Lesson(
+        id: "chord-d", title: "The D Chord", subtitle: "A bright triangle shape",
+        tier: 1, prerequisite: "chord-e", steps: chordSteps(["D", "D", "D"]))
+
+    static let chordG = Lesson(
+        id: "chord-g", title: "The G Chord", subtitle: "Reach across all six strings",
+        tier: 1, prerequisite: "chord-d", steps: chordSteps(["G", "G", "G"]))
+
+    static let chordC = Lesson(
+        id: "chord-c", title: "The C Chord", subtitle: "A classic open chord",
+        tier: 1, prerequisite: "chord-g", steps: chordSteps(["C", "C", "C"]))
+
+    // MARK: - Tier 2 — chord transitions (alternating chord steps)
+
+    static let changeEA = Lesson(
+        id: "change-ea", title: "E ↔ A", subtitle: "Switch cleanly between E and A",
+        tier: 2, prerequisite: "chord-c", steps: chordSteps(["E", "A", "E", "A"]))
+
+    static let changeAD = Lesson(
+        id: "change-ad", title: "A ↔ D", subtitle: "The A–D change",
+        tier: 2, prerequisite: "change-ea", steps: chordSteps(["A", "D", "A", "D"]))
+
+    static let changeGC = Lesson(
+        id: "change-gc", title: "G ↔ C", subtitle: "The classic G–C change",
+        tier: 2, prerequisite: "change-ad", steps: chordSteps(["G", "C", "G", "C"]))
+
+    static let all: [Lesson] = [openStrings, stringSwitching, lowToHigh, lowENotes, aStringNotes,
+                                chordA, chordE, chordD, chordG, chordC,
+                                changeEA, changeAD, changeGC]
 
     // MARK: - Step builders
+
+    private static func chord(_ id: String) -> Chord? { ChordBank.all.first { $0.id == id } }
+
+    /// One "strum this chord" step per id (skips any unknown id).
+    private static func chordSteps(_ ids: [String]) -> [LessonStep] {
+        ids.compactMap(chord).enumerated().map { index, chord in
+            LessonStep(id: index, note: chord.name, octaveLabel: "", frequency: 0,
+                       hint: "Strum the \(chord.name) chord", position: nil, chord: chord)
+        }
+    }
 
     private static let stringHints = [
         "6th string — low E", "5th string — A", "4th string — D",
@@ -144,7 +194,18 @@ enum CourseLibrary {
         subtitle: "Tier 1 · Fret your first notes", tier: 1,
         lessons: [LessonLibrary.lowENotes, LessonLibrary.aStringNotes])
 
-    static let all: [Course] = [firstContact, firstNotes]
+    static let firstChords = Course(
+        id: "first-chords", title: "First Chords",
+        subtitle: "Tier 1 · A E D G C", tier: 1,
+        lessons: [LessonLibrary.chordA, LessonLibrary.chordE, LessonLibrary.chordD,
+                  LessonLibrary.chordG, LessonLibrary.chordC])
+
+    static let chordChanges = Course(
+        id: "chord-changes", title: "Chord Changes",
+        subtitle: "Tier 2 · Switch cleanly", tier: 2,
+        lessons: [LessonLibrary.changeEA, LessonLibrary.changeAD, LessonLibrary.changeGC])
+
+    static let all: [Course] = [firstContact, firstNotes, firstChords, chordChanges]
 
     static func isUnlocked(_ course: Course, completed: Set<String>) -> Bool {
         guard let first = course.lessons.first else { return true }

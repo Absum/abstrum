@@ -33,11 +33,15 @@ struct LessonView: View {
         VStack(spacing: 0) {
             topBar.padding(.top, 12)
             Spacer()
-            targetNote
-            if let position = model.currentStep.position {
-                FretboardDiagram(positions: [position])
-                    .frame(width: 236, height: 138)
-                    .padding(.top, 14)
+            if let chord = model.currentStep.chord {
+                chordTarget(chord)
+            } else {
+                targetNote
+                if let position = model.currentStep.position {
+                    FretboardDiagram(positions: [position])
+                        .frame(width: 236, height: 138)
+                        .padding(.top, 14)
+                }
             }
             hearItButton.padding(.top, 14)
             Spacer().frame(height: 10)
@@ -108,6 +112,22 @@ struct LessonView: View {
         .animation(.snappy, value: model.currentStep.id)
     }
 
+    private func chordTarget(_ chord: Chord) -> some View {
+        VStack(spacing: 8) {
+            Text(chord.name)
+                .font(.custom("Rajdhani-SemiBold", size: 64))
+                .foregroundStyle(inTune ? Theme.teal : .white)
+                .shadow(color: inTune ? Theme.teal.opacity(0.7) : .clear, radius: 18)
+            FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings,
+                             barre: chord.barre, showFingers: true)
+                .frame(width: 224, height: 152)
+            Text(model.currentStep.hint)
+                .font(Theme.body(16)).foregroundStyle(Theme.frost.opacity(0.8))
+        }
+        .animation(.snappy, value: inTune)
+        .animation(.snappy, value: model.currentStep.id)
+    }
+
     private var hearItButton: some View {
         Button { model.playExample() } label: {
             HStack(spacing: 8) {
@@ -124,15 +144,28 @@ struct LessonView: View {
 
     private var detectedLine: some View {
         Group {
-            switch model.feedback {
-            case .correct:
-                Text("Nice — hold it").foregroundStyle(Theme.teal)
-            case .close:
-                Text(model.detectedLabel.map { "You're playing \($0) — adjust" } ?? "Almost")
-                    .foregroundStyle(Theme.frost.opacity(0.85))
-            case .waiting:
-                Text(model.detectedLabel.map { "Heard \($0)" } ?? "Play the note")
-                    .foregroundStyle(Theme.frost.opacity(0.6))
+            if model.currentStep.chord != nil {
+                switch model.feedback {
+                case .correct:
+                    Text("Nice — hold it").foregroundStyle(Theme.teal)
+                case .close:
+                    Text(model.detectedLabel ?? "Almost — keep the shape")
+                        .foregroundStyle(Theme.frost.opacity(0.85))
+                case .waiting:
+                    Text(model.detectedLabel ?? "Strum the chord")
+                        .foregroundStyle(Theme.frost.opacity(0.6))
+                }
+            } else {
+                switch model.feedback {
+                case .correct:
+                    Text("Nice — hold it").foregroundStyle(Theme.teal)
+                case .close:
+                    Text(model.detectedLabel.map { "You're playing \($0) — adjust" } ?? "Almost")
+                        .foregroundStyle(Theme.frost.opacity(0.85))
+                case .waiting:
+                    Text(model.detectedLabel.map { "Heard \($0)" } ?? "Play the note")
+                        .foregroundStyle(Theme.frost.opacity(0.6))
+                }
             }
         }
         .font(Theme.title(17)).tracking(1)
