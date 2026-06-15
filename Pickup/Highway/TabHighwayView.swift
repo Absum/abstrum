@@ -109,6 +109,7 @@ private struct HighwayRunner: View {
         VStack(spacing: 0) {
             topBar.padding(.top, 12)
             highway
+            waitToggle.padding(.horizontal, 30).padding(.bottom, 8)
             speedSelector.padding(.horizontal, 30).padding(.bottom, 10)
             if !model.isPlaying { listenButton.padding(.horizontal, 30).padding(.bottom, 10) }
             controlButton.padding(.horizontal, 30).padding(.bottom, 18)
@@ -128,6 +129,25 @@ private struct HighwayRunner: View {
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.white.opacity(0.16), lineWidth: 1))
         }
         .buttonStyle(.plain)
+    }
+
+    private var waitToggle: some View {
+        Button { model.waitMode.toggle() } label: {
+            HStack(spacing: 8) {
+                Image(systemName: model.waitMode ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 16, weight: .semibold))
+                Text("WAIT FOR EACH NOTE").font(Theme.title(13)).tracking(1)
+                Spacer()
+            }
+            .foregroundStyle(model.waitMode ? Theme.teal : Theme.frost.opacity(0.7))
+            .padding(.horizontal, 16).frame(height: 40)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.06)))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(model.waitMode ? Theme.teal.opacity(0.5) : .white.opacity(0.12), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(model.isPlaying || model.isPreviewing)
+        .opacity(model.isPlaying || model.isPreviewing ? 0.4 : 1)
     }
 
     private var speedSelector: some View {

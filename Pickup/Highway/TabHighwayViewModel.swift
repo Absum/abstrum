@@ -22,11 +22,13 @@ final class TabHighwayViewModel {
     var flashes: [Int: Double] = [:]
     /// Listen mode: the app plays the melody (synth) instead of scoring the mic.
     var isPreviewing = false
+    /// Practice/wait mode: hold each note at the strike line until it's played.
+    var waitMode = false
 
     private let audio = AudioEngine()
     private let preview = TonePlayer()
     private var playedIDs: Set<Int> = []
-    private var startDate: Date?
+    private var lastTick: Date?
     private var clock: Timer?
     private let hitWindow = 0.30      // seconds around a note's strike time
     private let centsTolerance = 60.0
@@ -56,7 +58,7 @@ final class TabHighwayViewModel {
         guard !isPlaying else { return }
         hitIDs = []; flashes = [:]; playedIDs = []; finished = false
         currentTime = -2.0
-        startDate = Date().addingTimeInterval(2.0)
+        lastTick = nil
         isPreviewing = true
         startClock()
     }
@@ -78,8 +80,8 @@ final class TabHighwayViewModel {
                 self.hitIDs = []
                 self.flashes = [:]
                 self.finished = false
-                self.currentTime = -2.0          // 2-beat lead-in before the first note
-                self.startDate = Date().addingTimeInterval(2.0)
+                self.currentTime = -2.0          // lead-in before the first note
+                self.lastTick = nil
                 self.isPlaying = true
                 self.startClock()
             }
@@ -100,10 +102,18 @@ final class TabHighwayViewModel {
         }
     }
 
+    private var nextUnhitTime: Double? {
+        notes.filter { !hitIDs.contains($0.id) }.map { seconds(of: $0) }.min()
+    }
+
     private func tick() {
-        guard let startDate else { return }
-        currentTime = Date().timeIntervalSince(startDate)
+        let now = Date()
+        guard let last = lastTick else { lastTick = now; return }
+        let dt = now.timeIntervalSince(last)
+        lastTick = now
+
         if isPreviewing {
+            currentTime += dt
             for note in notes where !playedIDs.contains(note.id) && seconds(of: note) <= currentTime {
                 preview.playNote(note.frequency)
                 playedIDs.insert(note.id)
@@ -111,9 +121,16 @@ final class TabHighwayViewModel {
                 flashes[note.string] = currentTime
             }
             if currentTime > endTime { stopPreview() }
-        } else if currentTime > endTime {
-            finish()
+            return
         }
+
+        // Play mode: in wait mode, never advance past a not-yet-played note.
+        if waitMode, let nextT = nextUnhitTime {
+            currentTime = min(currentTime + dt, nextT)
+        } else {
+            currentTime += dt
+        }
+        if currentTime > endTime { finish() }
     }
 
     private func finish() {
