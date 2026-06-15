@@ -9,6 +9,8 @@ import SwiftUI
 struct TabHighwayView: View {
     let onClose: () -> Void
     @State private var track: HighwayTrack?
+    @State private var showImport = false
+    private let imports = ImportStore.shared
 
     var body: some View {
         ZStack {
@@ -21,11 +23,15 @@ struct TabHighwayView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $showImport) { ImportSongView { showImport = false } }
         .onAppear {
             #if DEBUG
             if let id = ProcessInfo.processInfo.environment["PICKUP_HIGHWAY"],
                let match = HighwayLibrary.all.first(where: { $0.id == id }) {
                 track = match
+            }
+            if ProcessInfo.processInfo.environment["PICKUP_IMPORT"] != nil {
+                showImport = true
             }
             #endif
         }
@@ -49,35 +55,71 @@ struct TabHighwayView: View {
 
             ScrollView {
                 VStack(spacing: 14) {
-                    ForEach(HighwayLibrary.all) { item in
-                        Button { track = item } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 8) {
-                                        Text(item.title).font(Theme.display(22)).foregroundStyle(.white)
-                                        if item.licensed {
-                                            Text("LICENSED").font(Theme.body(10)).tracking(1)
-                                                .foregroundStyle(Color(hex: 0x06222A))
-                                                .padding(.horizontal, 7).padding(.vertical, 2)
-                                                .background(Capsule().fill(Color.orange.opacity(0.85)))
-                                        }
-                                    }
-                                    Text("\(item.credit) · \(item.bpm) BPM").font(Theme.body(13))
-                                        .foregroundStyle(Theme.frost.opacity(0.65))
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right").foregroundStyle(Theme.frost.opacity(0.5))
-                            }
-                            .padding(18)
-                            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.06)))
-                            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.12), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    importButton
+                    ForEach(HighwayLibrary.all) { trackRow($0, deletable: false) }
+                    ForEach(imports.tracks) { trackRow($0, deletable: true) }
                 }
                 .padding(.horizontal, 22).padding(.top, 22)
             }
         }
+    }
+
+    private var importButton: some View {
+        Button { showImport = true } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "plus.circle.fill").font(.system(size: 18, weight: .semibold))
+                Text("IMPORT A SONG").font(Theme.display(16)).tracking(2)
+                Spacer()
+            }
+            .foregroundStyle(Theme.frost)
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.08)))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.white.opacity(0.16), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func trackRow(_ item: HighwayTrack, deletable: Bool) -> some View {
+        HStack(spacing: 0) {
+            Button { track = item } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Text(item.title).font(Theme.display(22)).foregroundStyle(.white)
+                            if item.licensed {
+                                tag("LICENSED", .orange)
+                            } else if deletable {
+                                tag("MINE", Theme.teal)
+                            }
+                        }
+                        Text("\(item.credit) · \(item.bpm) BPM").font(Theme.body(13))
+                            .foregroundStyle(Theme.frost.opacity(0.65))
+                    }
+                    Spacer()
+                    if !deletable {
+                        Image(systemName: "chevron.right").foregroundStyle(Theme.frost.opacity(0.5))
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            if deletable {
+                Button { imports.delete(item.id) } label: {
+                    Image(systemName: "trash").font(.system(size: 16))
+                        .foregroundStyle(Theme.frost.opacity(0.6)).padding(.leading, 12)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(18)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.06)))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.12), lineWidth: 1))
+    }
+
+    private func tag(_ text: String, _ color: Color) -> some View {
+        Text(text).font(Theme.body(10)).tracking(1)
+            .foregroundStyle(Color(hex: 0x06222A))
+            .padding(.horizontal, 7).padding(.vertical, 2)
+            .background(Capsule().fill(color.opacity(0.85)))
     }
 }
 

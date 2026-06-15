@@ -28,6 +28,13 @@ enum HighwayLibrary {
         return HighwayNote(id: id, beat: beat, string: string, fret: fret, frequency: freq)
     }
 
+    /// Build highway notes (one quarter-note per step) — used by song import.
+    static func notes(from steps: [(string: Int, fret: Int)]) -> [HighwayNote] {
+        steps.enumerated().map { i, step in
+            note(i, beat: Double(i), string: min(5, max(0, step.string)), fret: max(0, step.fret))
+        }
+    }
+
     /// One quarter-note per step: (string, fret).
     private static func track(id: String, title: String, credit: String, bpm: Int,
                               steps: [(Int, Int)], repeats: Int = 1, licensed: Bool = false) -> HighwayTrack {
