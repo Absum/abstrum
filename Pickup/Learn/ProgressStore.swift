@@ -33,6 +33,14 @@ final class ProgressStore {
     /// Whether the streak's most recent active day is today (vs. needs a session).
     func isActiveToday(_ now: Date = Date()) -> Bool { lastActiveDay == Self.dayKey(now) }
 
+    /// Calendar days since the last practice, or nil if the user never played.
+    func daysSinceActive(_ now: Date = Date()) -> Int? {
+        guard let last = lastActiveDay, let date = Self.date(fromKey: last) else { return nil }
+        let cal = Calendar.current
+        return cal.dateComponents([.day], from: cal.startOfDay(for: date),
+                                  to: cal.startOfDay(for: now)).day
+    }
+
     private let fileURL: URL
 
     init(directory: URL? = nil, filename: String = "progress.json") {

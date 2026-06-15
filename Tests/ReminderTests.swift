@@ -34,4 +34,32 @@ final class ReminderTests: XCTestCase {
                                                   practicedToday: false, calendar: cal)
         XCTAssertEqual(cal.component(.day, from: fire), 16)
     }
+
+    // MARK: - Message tiers
+
+    func testActiveStreakMessage() {
+        let m = ReminderScheduler.message(streak: 4, bestStreak: 9, daysAway: 0)
+        XCTAssertTrue(m.body.contains("4-day streak"))
+    }
+
+    func testStartMessageWhenNeverPlayed() {
+        let m = ReminderScheduler.message(streak: 0, bestStreak: 0, daysAway: nil)
+        XCTAssertEqual(m.title, "Start a streak")
+    }
+
+    func testWinBackEarly() {
+        let m = ReminderScheduler.message(streak: 0, bestStreak: 12, daysAway: 3)
+        XCTAssertEqual(m.title, "It's not too late")
+        XCTAssertTrue(m.body.contains("12-day best"))
+    }
+
+    func testWinBackMid() {
+        let m = ReminderScheduler.message(streak: 0, bestStreak: 12, daysAway: 8)
+        XCTAssertEqual(m.title, "Your streak's waiting")
+    }
+
+    func testWinBackLongLapse() {
+        let m = ReminderScheduler.message(streak: 0, bestStreak: 12, daysAway: 30)
+        XCTAssertEqual(m.title, "Your guitar misses you")
+    }
 }
