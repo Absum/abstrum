@@ -35,6 +35,12 @@ struct TabHighwayView: View {
             if ProcessInfo.processInfo.environment["PICKUP_IMPORT"] != nil {
                 showImport = true
             }
+            if ProcessInfo.processInfo.environment["PICKUP_SEED_IMPORT"] != nil, imports.songs.isEmpty {
+                imports.add(title: "My Riff", bpm: 100, steps: [(5, 0), (5, 1), (5, 3), (4, 3), (4, 1)])
+            }
+            if ProcessInfo.processInfo.environment["PICKUP_EDIT"] != nil {
+                editingSong = imports.songs.first
+            }
             #endif
         }
     }
