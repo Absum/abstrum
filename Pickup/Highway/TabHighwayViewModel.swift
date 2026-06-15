@@ -30,6 +30,9 @@ final class TabHighwayViewModel {
     /// Signed timing error per hit note (seconds; <0 = early, >0 = late), after
     /// compensating for analysis latency. Drives the timing accuracy score.
     var timingErrors: [Int: Double] = [:]
+    /// Recent note onsets (attack times in the visual clock), from the DSP
+    /// onset detector — used to time each hit precisely.
+    private var recentOnsets: [Double] = []
     /// Most recent hit's timing feedback, for the on-strike flash label.
     var lastTiming: (string: Int, grade: TimingGrade, ms: Int, time: Double)?
 
@@ -51,6 +54,7 @@ final class TabHighwayViewModel {
     init(track: HighwayTrack) {
         self.track = track
         audio.onResult = { [weak self] in self?.handle($0) }
+        audio.onOnset = { [weak self] in self?.handleOnset($0) }   // attack timing
         audio.enableClickPlayback = true   // metronome click + count-in during play
         preview.keepAlive = true
     }
@@ -136,6 +140,7 @@ final class TabHighwayViewModel {
                 self.flashes = [:]
                 self.timingErrors = [:]
                 self.lastTiming = nil
+                self.recentOnsets = []
                 self.finished = false
                 self.currentTime = -2.0          // lead-in before the first note
                 self.lastTick = nil
@@ -208,6 +213,14 @@ final class TabHighwayViewModel {
         finished = true
     }
 
+    /// A DSP-detected attack, in seconds since audio start; converted to the
+    /// visual clock (which begins at -2 during the lead-in) and kept briefly.
+    private func handleOnset(_ secondsSinceStart: Double) {
+        guard isPlaying else { return }
+        recentOnsets.append(secondsSinceStart - 2.0)
+        recentOnsets.removeAll { $0 < currentTime - 1.0 }
+    }
+
     private func handle(_ result: AudioEngine.Result?) {
         guard isPlaying, let frequency = result?.frequency, frequency > 0 else { return }
         for n in notes where !hitIDs.contains(n.id) {
@@ -219,7 +232,16 @@ final class TabHighwayViewModel {
                 flashes[n.string] = currentTime
                 // Grade timing (not meaningful while waitMode holds the note).
                 if !waitMode {
-                    let offset = (currentTime - seconds(of: n)) - timingLatency
+                    let beat = seconds(of: n)
+                    // Prefer the real attack onset nearest this note's beat;
+                    // fall back to the pitch-match time if none is close.
+                    let offset: Double
+                    if let o = recentOnsets.min(by: { abs($0 - beat) < abs($1 - beat) }),
+                       abs(o - beat) <= 0.2 {
+                        offset = o - beat
+                    } else {
+                        offset = (currentTime - beat) - timingLatency
+                    }
                     timingErrors[n.id] = offset
                     let grade: TimingGrade = abs(offset) <= 0.05 ? .perfect : (offset < 0 ? .early : .late)
                     lastTiming = (n.string, grade, Int((offset * 1000).rounded()), currentTime)

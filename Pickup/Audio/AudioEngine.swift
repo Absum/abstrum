@@ -18,6 +18,9 @@ final class AudioEngine {
     var onResult: ((Result?) -> Void)?
     /// Raw mono samples + sample rate, on the audio thread (for chord chroma).
     var onSamples: (([Float], Double) -> Void)?
+    /// Called on the main queue with a note onset's time in seconds since start
+    /// (input-latency compensated). Set this to enable onset detection.
+    var onOnset: ((Double) -> Void)?
     /// Skip monophonic pitch detection (e.g. when only chroma is needed).
     var detectsPitch = true
     /// Run full-duplex (.playAndRecord) so a metronome click can play while the
@@ -26,6 +29,8 @@ final class AudioEngine {
 
     private let engine = AVAudioEngine()
     private var pitch: PitchEngine?
+    private var onset: OnsetEngine?
+    private var inputLatency: Double = 0
     private var currentSampleRate: Double = 44_100
     private let bufferSize: AVAudioFrameCount = 4096
 
@@ -54,6 +59,8 @@ final class AudioEngine {
         let format = input.inputFormat(forBus: 0)
         currentSampleRate = format.sampleRate
         pitch = PitchEngine(sampleRate: format.sampleRate)
+        onset = onOnset != nil ? OnsetEngine(sampleRate: format.sampleRate) : nil
+        inputLatency = session.inputLatency
 
         input.removeTap(onBus: 0)
         input.installTap(onBus: 0, bufferSize: bufferSize, format: format) { [weak self] buffer, _ in
@@ -89,7 +96,11 @@ final class AudioEngine {
         let samples = buffer.floatChannelData![0]
         for i in 0..<Int(frames) {
             let t = Double(i) / sampleRate
-            samples[i] = Float(sin(2.0 * .pi * frequency * t) * exp(-t * 35.0) * 0.5)
+            // Soft (4 ms raised-cosine) attack: avoids a broadband click transient
+            // so the band-limited onset detector won't mistake it for a pluck.
+            let attack = min(1.0, t / 0.004)
+            let env = 0.5 * (1.0 - cos(.pi * attack))
+            samples[i] = Float(sin(2.0 * .pi * frequency * t) * exp(-t * 35.0) * env * 0.5)
         }
         return buffer
     }
@@ -98,6 +109,7 @@ final class AudioEngine {
         guard engine.isRunning else { return }
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
+        onset = nil
         try? AVAudioSession.sharedInstance().setActive(false)
     }
 
@@ -109,6 +121,17 @@ final class AudioEngine {
         let samples = Array(UnsafeBufferPointer(start: channelData[0], count: count))
 
         onSamples?(samples, currentSampleRate)
+
+        if let onset, onOnset != nil {
+            let times = onset.process(samples)
+            if !times.isEmpty {
+                let latency = inputLatency
+                DispatchQueue.main.async { [weak self] in
+                    for t in times { self?.onOnset?(t - latency) }
+                }
+            }
+        }
+
         guard detectsPitch else { return }
 
         let estimate = pitch?.process(samples)
