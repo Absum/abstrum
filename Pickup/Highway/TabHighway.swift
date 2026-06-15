@@ -30,8 +30,9 @@ enum HighwayLibrary {
 
     /// One quarter-note per step: (string, fret).
     private static func track(id: String, title: String, credit: String, bpm: Int,
-                              steps: [(Int, Int)], licensed: Bool = false) -> HighwayTrack {
-        let notes = steps.enumerated().map { i, step in
+                              steps: [(Int, Int)], repeats: Int = 1, licensed: Bool = false) -> HighwayTrack {
+        let full = Array(repeating: steps, count: max(1, repeats)).flatMap { $0 }
+        let notes = full.enumerated().map { i, step in
             note(i, beat: Double(i), string: step.0, fret: step.1)
         }
         return HighwayTrack(id: id, title: title, credit: credit, bpm: bpm, notes: notes, licensed: licensed)
@@ -55,12 +56,12 @@ enum HighwayLibrary {
                       (5, 0), (5, 3), (4, 1), (4, 3), (5, 0)]),
         // Recognizable public-domain single-note themes.
         track(id: "fur-elise", title: "Für Elise", credit: "Beethoven", bpm: 100,
-              steps: [(5, 0), (4, 4), (5, 0), (4, 4), (5, 0), (4, 0), (4, 3), (4, 1), (3, 2)]),
+              steps: [(5, 0), (4, 4), (5, 0), (4, 4), (5, 0), (4, 0), (4, 3), (4, 1), (3, 2)], repeats: 2),
         track(id: "mountain-king", title: "In the Hall of the Mountain King", credit: "Grieg", bpm: 100,
               steps: [(2, 2), (2, 4), (3, 0), (3, 2), (4, 0), (3, 0), (4, 0), (5, 0),
                       (2, 1), (2, 4), (3, 0), (3, 2), (4, 0), (3, 0), (4, 0), (5, 0)]),
         track(id: "beethoven-5", title: "Symphony No. 5", credit: "Beethoven", bpm: 100,
-              steps: [(3, 0), (3, 0), (3, 0), (2, 1), (2, 3), (2, 3), (2, 3), (2, 0)]),
+              steps: [(3, 0), (3, 0), (3, 0), (2, 1), (2, 3), (2, 3), (2, 3), (2, 0)], repeats: 2),
         track(id: "star-spangled", title: "The Star-Spangled Banner", credit: "Traditional", bpm: 80,
               steps: [(3, 0), (2, 2), (1, 3), (2, 2), (3, 0), (4, 1), (5, 0), (4, 3), (4, 1)]),
     ]
@@ -70,11 +71,13 @@ enum HighwayLibrary {
     // before any public release. Each is flagged `licensed: true`.
     private static let licensed: [HighwayTrack] = [
         track(id: "seven-nation-army", title: "Seven Nation Army", credit: "The White Stripes", bpm: 120,
-              steps: [(2, 2), (2, 2), (3, 0), (2, 2), (2, 0), (1, 3), (1, 2)], licensed: true),
+              steps: [(2, 2), (2, 2), (3, 0), (2, 2), (2, 0), (1, 3), (1, 2)], repeats: 4, licensed: true),
         track(id: "smoke-on-the-water", title: "Smoke on the Water", credit: "Deep Purple", bpm: 112,
-              steps: [(3, 0), (3, 3), (4, 1), (3, 0), (3, 3), (4, 2), (4, 1), (3, 0), (3, 3), (4, 1), (3, 3), (3, 0)], licensed: true),
+              steps: [(3, 0), (3, 3), (4, 1), (3, 0), (3, 3), (4, 2), (4, 1), (3, 0), (3, 3), (4, 1), (3, 3), (3, 0)],
+              repeats: 3, licensed: true),
         track(id: "iron-man", title: "Iron Man", credit: "Black Sabbath", bpm: 100,
-              steps: [(1, 2), (1, 2), (2, 0), (2, 0), (2, 2), (2, 2), (2, 2), (3, 0), (2, 2), (2, 0)], licensed: true),
+              steps: [(1, 2), (1, 2), (2, 0), (2, 0), (2, 2), (2, 2), (2, 2), (3, 0), (2, 2), (2, 0)],
+              repeats: 3, licensed: true),
     ]
 
     /// ⚠️ SET TO `false` BEFORE PUBLISHING — excludes all copyrighted tracks.

@@ -24,6 +24,16 @@ final class TonePlayer {
     func playNote(_ frequency: Double) { play([frequency], strumDelay: 0) }
     func playChord(_ frequencies: [Double]) { play(frequencies, strumDelay: 0.028) }
 
+    /// Start the audio session + engine ahead of time so the first note doesn't
+    /// glitch while the engine spins up. Call during a lead-in.
+    func warmUp() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .default, options: [])
+        try? session.setActive(true)
+        if !engine.isRunning { try? engine.start() }
+        if !player.isPlaying { player.play() }
+    }
+
     func stop() {
         player.stop()
         if engine.isRunning { engine.stop() }

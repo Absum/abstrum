@@ -59,6 +59,7 @@ final class TabHighwayViewModel {
         hitIDs = []; flashes = [:]; playedIDs = []; finished = false
         currentTime = -2.0
         lastTick = nil
+        preview.warmUp()       // spin up the engine during the lead-in
         isPreviewing = true
         startClock()
     }
