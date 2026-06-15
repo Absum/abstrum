@@ -313,15 +313,17 @@ private struct HighwayRunner: View {
                 let missed = model.seconds(of: note) < model.currentTime - 0.32 && !hit
                 let color: Color = hit ? Theme.teal : (missed ? Theme.frost.opacity(0.22) : Theme.cyan)
 
-                // Sustain tail — one capsule the same width and corner radius as the
-                // note, with its base at the bottom of the ball (not the centre) so it
-                // reads as the note itself extended upward; the ball is drawn on top,
+                // Sustain tail — only for genuinely held notes (longer than a beat);
+                // shorter notes are re-plucked immediately, so a tail would just be a
+                // connector to the next ball. Their rhythm reads from spacing instead.
+                // The capsule's base sits at the bottom of the ball (not the centre)
+                // so it reads as the note extended upward; the ball is drawn on top,
                 // hiding the rounded base so only the far end shows its cap.
                 // A small gap at the top keeps back-to-back notes visually distinct.
                 let gap = min(durPx * 0.22, 28)
                 let tailTop = yEnd + gap
                 let tailBottom = yHead + r
-                if tailBottom - tailTop > 2 * r {
+                if note.duration > 1.0 && tailBottom - tailTop > 2 * r {
                     let tail = CGRect(x: x - r, y: tailTop, width: 2 * r, height: tailBottom - tailTop)
                     ctx.fill(Path(roundedRect: tail, cornerRadius: r), with: .color(color.opacity(0.5)))
                 }

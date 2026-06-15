@@ -57,32 +57,57 @@ enum HighwayLibrary {
                             notes: notes(fromRhythm: rhythm), licensed: licensed)
     }
 
+    /// Rhythmic track: each step is (string, fret, beats). string < 0 = rest.
+    private static func track(id: String, title: String, credit: String, bpm: Int,
+                              rhythm steps: [(Int, Int, Double)], repeats: Int = 1,
+                              licensed: Bool = false) -> HighwayTrack {
+        let full = Array(repeating: steps, count: max(1, repeats)).flatMap { $0 }
+        let mapped = full.map { (string: $0.0, fret: $0.1, beats: $0.2) }
+        return HighwayTrack(id: id, title: title, credit: credit, bpm: bpm,
+                            notes: notes(fromRhythm: mapped), licensed: licensed)
+    }
+
     private static let publicDomain: [HighwayTrack] = [
+        // Warm-up stays even quarter-notes by design.
         track(id: "ladder", title: "Open String Ladder", credit: "Warm-up", bpm: 60,
               steps: [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0),
                       (4, 0), (3, 0), (2, 0), (1, 0), (0, 0)]),
+        // Quarters through the phrases, with the closing "E. D D" dotted figure.
         track(id: "ode-to-joy", title: "Ode to Joy", credit: "Beethoven", bpm: 80,
-              steps: [(5, 0), (5, 0), (5, 1), (5, 3), (5, 3), (5, 1), (5, 0), (4, 3),
-                      (4, 1), (4, 1), (4, 3), (5, 0), (5, 0), (4, 3), (4, 3)]),
+              rhythm: [(5, 0, 1), (5, 0, 1), (5, 1, 1), (5, 3, 1), (5, 3, 1), (5, 1, 1), (5, 0, 1), (4, 3, 1),
+                       (4, 1, 1), (4, 1, 1), (4, 3, 1), (5, 0, 1), (5, 0, 1.5), (4, 3, 0.5), (4, 3, 2)]),
+        // Quarters with a half-note on "star" and the final note.
         track(id: "twinkle", title: "Twinkle, Twinkle", credit: "Traditional", bpm: 90,
-              steps: [(4, 1), (4, 1), (5, 3), (5, 3), (5, 5), (5, 5), (5, 3),
-                      (5, 1), (5, 1), (5, 0), (5, 0), (4, 3), (4, 3), (4, 1)]),
+              rhythm: [(4, 1, 1), (4, 1, 1), (5, 3, 1), (5, 3, 1), (5, 5, 1), (5, 5, 1), (5, 3, 2),
+                       (5, 1, 1), (5, 1, 1), (5, 0, 1), (5, 0, 1), (4, 3, 1), (4, 3, 1), (4, 1, 2)]),
         track(id: "mary-lamb", title: "Mary Had a Little Lamb", credit: "Traditional", bpm: 90,
-              steps: [(5, 0), (4, 3), (4, 1), (4, 3), (5, 0), (5, 0), (5, 0),
-                      (4, 3), (4, 3), (4, 3), (5, 0), (5, 3), (5, 3)]),
+              rhythm: [(5, 0, 1), (4, 3, 1), (4, 1, 1), (4, 3, 1), (5, 0, 1), (5, 0, 1), (5, 0, 2),
+                       (4, 3, 1), (4, 3, 1), (4, 3, 2), (5, 0, 1), (5, 3, 1), (5, 3, 2)]),
+        // "Jingle bells" = two quarters + a half, twice; then the run home.
         track(id: "jingle", title: "Jingle Bells", credit: "Traditional", bpm: 100,
-              steps: [(5, 0), (5, 0), (5, 0), (5, 0), (5, 0), (5, 0),
-                      (5, 0), (5, 3), (4, 1), (4, 3), (5, 0)]),
+              rhythm: [(5, 0, 1), (5, 0, 1), (5, 0, 2), (5, 0, 1), (5, 0, 1), (5, 0, 2),
+                       (5, 0, 1), (5, 3, 1), (4, 1, 1.5), (4, 3, 0.5), (5, 0, 2)]),
         // Recognizable public-domain single-note themes.
+        // Für Elise opens on a run of even eighth notes.
         track(id: "fur-elise", title: "Für Elise", credit: "Beethoven", bpm: 100,
-              steps: [(5, 0), (4, 4), (5, 0), (4, 4), (5, 0), (4, 0), (4, 3), (4, 1), (3, 2)], repeats: 2),
-        track(id: "mountain-king", title: "In the Hall of the Mountain King", credit: "Grieg", bpm: 100,
-              steps: [(2, 2), (2, 4), (3, 0), (3, 2), (4, 0), (3, 0), (4, 0), (5, 0),
-                      (2, 1), (2, 4), (3, 0), (3, 2), (4, 0), (3, 0), (4, 0), (5, 0)]),
-        track(id: "beethoven-5", title: "Symphony No. 5", credit: "Beethoven", bpm: 100,
-              steps: [(3, 0), (3, 0), (3, 0), (2, 1), (2, 3), (2, 3), (2, 3), (2, 0)], repeats: 2),
+              rhythm: [(5, 0, 0.5), (4, 4, 0.5), (5, 0, 0.5), (4, 4, 0.5), (5, 0, 0.5),
+                       (4, 0, 0.5), (4, 3, 0.5), (4, 1, 0.5), (3, 2, 1)], repeats: 2),
+        // Grieg's creeping march: staccato eighths rising to a held step.
+        track(id: "mountain-king", title: "In the Hall of the Mountain King", credit: "Grieg", bpm: 110,
+              rhythm: [(2, 2, 0.5), (2, 4, 0.5), (3, 0, 0.5), (3, 2, 0.5), (4, 0, 0.5), (3, 0, 0.5), (4, 0, 0.5), (5, 0, 1),
+                       (2, 1, 0.5), (2, 4, 0.5), (3, 0, 0.5), (3, 2, 0.5), (4, 0, 0.5), (3, 0, 0.5), (4, 0, 0.5), (5, 0, 1)]),
+        // The famous "short-short-short-long" motif.
+        track(id: "beethoven-5", title: "Symphony No. 5", credit: "Beethoven", bpm: 108,
+              rhythm: [(3, 0, 0.5), (3, 0, 0.5), (3, 0, 0.5), (2, 1, 2),
+                       (2, 3, 0.5), (2, 3, 0.5), (2, 3, 0.5), (2, 0, 2)], repeats: 2),
         track(id: "star-spangled", title: "The Star-Spangled Banner", credit: "Traditional", bpm: 80,
-              steps: [(3, 0), (2, 2), (1, 3), (2, 2), (3, 0), (4, 1), (5, 0), (4, 3), (4, 1)]),
+              rhythm: [(3, 0, 1.5), (2, 2, 0.5), (1, 3, 1), (2, 2, 1), (3, 0, 1), (4, 1, 1),
+                       (5, 0, 2), (4, 3, 1), (4, 1, 1)]),
+        // Rossini's gallop — two sixteenths + an eighth, the rhythm showcase.
+        track(id: "william-tell", title: "William Tell Overture", credit: "Rossini", bpm: 132,
+              rhythm: [(5, 0, 0.25), (5, 0, 0.25), (5, 0, 0.5), (5, 0, 0.25), (5, 0, 0.25), (5, 0, 0.5),
+                       (5, 0, 0.25), (5, 0, 0.25), (5, 0, 0.5), (5, 0, 1),
+                       (5, 0, 0.5), (5, 3, 0.5), (5, 5, 0.5), (5, 3, 0.5), (5, 0, 2)], repeats: 2),
     ]
 
     // Default tracks are public-domain only. Copyrighted songs are not bundled;
