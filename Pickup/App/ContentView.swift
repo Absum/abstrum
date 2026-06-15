@@ -15,6 +15,7 @@ struct ContentView: View {
         case "tuner": _selection = State(initialValue: 1)
         case "metronome": _selection = State(initialValue: 2)
         case "chords": _selection = State(initialValue: 3)
+        case "settings": _selection = State(initialValue: 4)
         default: break
         }
         #endif
@@ -34,6 +35,9 @@ struct ContentView: View {
             ChordsView()
                 .tag(3)
                 .tabItem { Label("Chords", systemImage: "guitars.fill") }
+            SettingsView()
+                .tag(4)
+                .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
         }
         .tint(Theme.teal)
     }

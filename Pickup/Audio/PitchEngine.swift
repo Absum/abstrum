@@ -15,7 +15,7 @@ final class PitchEngine {
 
     init(sampleRate: Double) {
         detector = pk_pitch_detector_create(sampleRate)
-        if let detector { pk_pitch_detector_set_gate(detector, AudioSettings.inputGateRMS) }
+        if let detector { pk_pitch_detector_set_gate(detector, AudioSettings.shared.inputGateRMS) }
     }
 
     deinit {
