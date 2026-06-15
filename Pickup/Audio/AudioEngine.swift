@@ -39,7 +39,10 @@ final class AudioEngine {
     func start() throws {
         let session = AVAudioSession.sharedInstance()
         if enableClickPlayback {
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+            // .measurement keeps AGC/echo-cancellation off so pitch detection stays
+            // accurate while a click plays; chroma-only callers can use .default.
+            let mode: AVAudioSession.Mode = detectsPitch ? .measurement : .default
+            try session.setCategory(.playAndRecord, mode: mode, options: [.defaultToSpeaker])
         } else {
             // .measurement disables AGC / echo cancellation that would distort pitch.
             try session.setCategory(.record, mode: .measurement, options: [])

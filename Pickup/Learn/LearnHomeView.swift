@@ -9,6 +9,7 @@ import SwiftUI
 struct LearnHomeView: View {
     @State private var path: [Course] = []
     @State private var showPlayAlong = false
+    @State private var showHighway = false
     private let store = ProgressStore.shared
 
     var body: some View {
@@ -20,6 +21,7 @@ struct LearnHomeView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             playAlongCard
+                            highwayCard
                             ForEach(CourseLibrary.all) { course in
                                 let unlocked = CourseLibrary.isUnlocked(course, completed: store.completedLessonIDs)
                                 courseCard(course, unlocked: unlocked)
@@ -40,6 +42,9 @@ struct LearnHomeView: View {
         .fullScreenCover(isPresented: $showPlayAlong) {
             PlayAlongView { showPlayAlong = false }
         }
+        .fullScreenCover(isPresented: $showHighway) {
+            TabHighwayView { showHighway = false }
+        }
         .onAppear {
             #if DEBUG
             if let raw = ProcessInfo.processInfo.environment["PICKUP_COMPLETE"] {
@@ -51,6 +56,9 @@ struct LearnHomeView: View {
             }
             if ProcessInfo.processInfo.environment["PICKUP_PLAYALONG"] != nil {
                 showPlayAlong = true
+            }
+            if ProcessInfo.processInfo.environment["PICKUP_HIGHWAY"] != nil {
+                showHighway = true
             }
             #endif
         }
@@ -81,6 +89,28 @@ struct LearnHomeView: View {
             .padding(18)
             .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Theme.teal.opacity(0.14)))
             .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.teal.opacity(0.4), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var highwayCard: some View {
+        Button { showHighway = true } label: {
+            HStack(spacing: 16) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Theme.cyan.opacity(0.9)).frame(width: 58, height: 58)
+                    Image(systemName: "arrow.down.to.line").font(.system(size: 24)).foregroundStyle(Color(hex: 0x06222A))
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Tab Highway").font(Theme.display(23)).foregroundStyle(.white)
+                    Text("Hit the notes as they fall").font(Theme.body(14)).foregroundStyle(Theme.frost.opacity(0.75))
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(Theme.frost.opacity(0.6))
+            }
+            .padding(18)
+            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Theme.cyan.opacity(0.12)))
+            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.cyan.opacity(0.4), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }

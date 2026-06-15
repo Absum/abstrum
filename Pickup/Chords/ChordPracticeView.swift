@@ -21,25 +21,34 @@ struct ChordPracticeView: View {
             ArcticBackground(glow: model.matched)
             VStack(spacing: 0) {
                 topBar.padding(.top, 12)
-                Spacer()
-                Text(chord.name)
-                    .font(.custom("Rajdhani-SemiBold", size: 96))
-                    .foregroundStyle(model.matched ? Theme.teal : .white)
-                    .shadow(color: model.matched ? Theme.teal.opacity(0.8) : .clear, radius: 24)
-                Text(chord.quality.label.uppercased())
-                    .font(Theme.light(13)).tracking(5).foregroundStyle(Theme.frost.opacity(0.7))
+
+                Spacer(minLength: 16)
+
+                VStack(spacing: 6) {
+                    Text(chord.name)
+                        .font(.custom("Rajdhani-SemiBold", size: 96))
+                        .foregroundStyle(model.matched ? Theme.teal : .white)
+                        .shadow(color: model.matched ? Theme.teal.opacity(0.8) : .clear, radius: 24)
+                    Text(chord.quality.label.uppercased())
+                        .font(Theme.light(13)).tracking(5).foregroundStyle(Theme.frost.opacity(0.7))
+                }
 
                 FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings, barre: chord.barre)
-                    .frame(width: 250, height: 170)
-                    .padding(.top, 18)
+                    .frame(width: 286, height: 232)
+                    .padding(.top, 28)
 
-                hearItButton.padding(.top, 18)
+                Spacer(minLength: 28)
 
-                Spacer().frame(height: 22)
-                matchMeter.padding(.horizontal, 40)
-                statusLine.padding(.top, 14)
-                Spacer()
-                prompt.padding(.bottom, 26)
+                hearItButton
+
+                Spacer(minLength: 32)
+
+                matchMeter.padding(.horizontal, 44)
+                statusLine.padding(.top, 18)
+
+                Spacer(minLength: 28)
+
+                prompt.padding(.bottom, 30)
             }
         }
         .preferredColorScheme(.dark)

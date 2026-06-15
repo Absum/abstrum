@@ -63,6 +63,7 @@ final class PlayAlongViewModel {
         isPreviewing = true
         previewBar = 0
         beatInBar = 0
+        preview.warmUp()
         playPreviewBar()
     }
 

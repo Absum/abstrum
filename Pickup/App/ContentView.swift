@@ -19,6 +19,15 @@ struct ContentView: View {
         default: break
         }
         #endif
+
+        // Restore the frosted-glass tab bar (system blur material) on BOTH the
+        // standard and scroll-edge appearances. Newer iOS defaults the scroll-edge
+        // appearance to fully transparent, which let scrolled content show through
+        // raw; the blur frosts whatever passes behind it instead.
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 
     var body: some View {

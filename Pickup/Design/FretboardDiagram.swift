@@ -20,16 +20,29 @@ struct FretboardDiagram: View {
     var body: some View {
         Canvas { ctx, size in
             let cols = 6
-            let leftPad: CGFloat = 30, rightPad: CGFloat = 16
-            let topPad: CGFloat = 24, bottomPad: CGFloat = 10
-            let w = size.width - leftPad - rightPad
-            let h = size.height - topPad - bottomPad
-            let colGap = w / CGFloat(cols - 1)
-            let rowGap = h / CGFloat(fretCount)
+            let sidePad: CGFloat = 22
+            // Top padding leaves headroom for the X / open-string markers that sit
+            // above the nut (they scale with cell size, so the room must too).
+            let topPad: CGFloat = 36, bottomPad: CGFloat = 10
+            let availW = size.width - sidePad * 2
+            let availH = size.height - topPad - bottomPad
+            // Use one square cell for both axes so the grid never squeezes, and
+            // centre it in the card. The base-fret number (when shown) sits in the
+            // left margin beside the grid rather than pushing it off-centre.
+            let cell = min(availW / CGFloat(cols - 1), availH / CGFloat(fretCount))
+            let colGap = cell, rowGap = cell
+            let w = cell * CGFloat(cols - 1)
+            let h = cell * CGFloat(fretCount)
+            let originX = sidePad + (availW - w) / 2
             // Dot radius scales with cell size, so the dot-to-grid ratio is the
             // same in the small listing cards and the full-screen practice view.
-            let r = min(rowGap, colGap) * 0.30
-            func x(_ s: Int) -> CGFloat { leftPad + colGap * CGFloat(s) }
+            let r = cell * 0.30
+            func x(_ s: Int) -> CGFloat { originX + colGap * CGFloat(s) }
+
+            // X / open-ring markers sit above the nut. Their offset scales with the
+            // marker size so they never clip on the large practice diagram.
+            let markerR = r * 0.72
+            let markerY = topPad - markerR - 8
 
             let frettedFrets = positions.filter { $0.fret > 0 }.map { $0.fret }
             let maxFret = frettedFrets.max() ?? 0
@@ -38,22 +51,22 @@ struct FretboardDiagram: View {
 
             // Top line: thick nut (open) or thin line + "Nfr" base label.
             var top = Path()
-            top.move(to: CGPoint(x: leftPad, y: topPad))
-            top.addLine(to: CGPoint(x: leftPad + w, y: topPad))
+            top.move(to: CGPoint(x: originX, y: topPad))
+            top.addLine(to: CGPoint(x: originX + w, y: topPad))
             ctx.stroke(top, with: .color(.white.opacity(isOpen ? 0.9 : 0.4)),
                        lineWidth: isOpen ? 3 : 1)
             if !isOpen {
-                ctx.draw(Text("\(firstFret)fr")
-                            .font(Theme.body(12))
-                            .foregroundColor(Theme.frost.opacity(0.8)),
-                         at: CGPoint(x: leftPad - 9, y: topPad + rowGap * 0.5), anchor: .trailing)
+                ctx.draw(Text("\(firstFret)")
+                            .font(Theme.title(15))
+                            .foregroundColor(Theme.frost.opacity(0.85)),
+                         at: CGPoint(x: originX - 8, y: topPad + rowGap * 0.5), anchor: .trailing)
             }
 
             for f in 1...fretCount {
                 let y = topPad + rowGap * CGFloat(f)
                 var p = Path()
-                p.move(to: CGPoint(x: leftPad, y: y))
-                p.addLine(to: CGPoint(x: leftPad + w, y: y))
+                p.move(to: CGPoint(x: originX, y: y))
+                p.addLine(to: CGPoint(x: originX + w, y: y))
                 ctx.stroke(p, with: .color(.white.opacity(0.22)), lineWidth: 1)
             }
             for s in 0..<cols {
@@ -79,8 +92,8 @@ struct FretboardDiagram: View {
             for pos in positions where pos.string >= 0 && pos.string < cols {
                 if pos.fret == 0 {
                     if isOpen {
-                        let ring = CGRect(x: x(pos.string) - r * 0.7, y: topPad - 14 - r * 0.7,
-                                          width: r * 1.4, height: r * 1.4)
+                        let ring = CGRect(x: x(pos.string) - markerR, y: markerY - markerR,
+                                          width: markerR * 2, height: markerR * 2)
                         ctx.stroke(Path(ellipseIn: ring), with: .color(tint), lineWidth: 2)
                     }
                 } else {
@@ -98,8 +111,8 @@ struct FretboardDiagram: View {
 
             // Muted strings: an X above the nut.
             for s in mutedStrings where s >= 0 && s < cols {
-                let cx = x(s), cy = topPad - 14
-                let d = r * 0.7
+                let cx = x(s), cy = markerY
+                let d = markerR
                 var p = Path()
                 p.move(to: CGPoint(x: cx - d, y: cy - d)); p.addLine(to: CGPoint(x: cx + d, y: cy + d))
                 p.move(to: CGPoint(x: cx - d, y: cy + d)); p.addLine(to: CGPoint(x: cx + d, y: cy - d))
