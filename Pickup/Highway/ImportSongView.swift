@@ -6,13 +6,27 @@
 import SwiftUI
 
 struct ImportSongView: View {
-    let onClose: () -> Void
+    private let editing: ImportedSong?
+    private let onClose: () -> Void
 
-    @State private var title = ""
-    @State private var bpm = 100.0
-    @State private var tab = ""
+    @State private var title: String
+    @State private var bpm: Double
+    @State private var tab: String
     @State private var error: String?
     private let store = ImportStore.shared
+
+    init(editing: ImportedSong? = nil, onClose: @escaping () -> Void) {
+        self.editing = editing
+        self.onClose = onClose
+        _title = State(initialValue: editing?.title ?? "")
+        _bpm = State(initialValue: Double(editing?.bpm ?? 100))
+        _tab = State(initialValue: editing.map { Self.tokens(from: $0.steps) } ?? "")
+    }
+
+    /// Rebuild the "string:fret" token text from stored steps (for editing).
+    private static func tokens(from steps: [[Int]]) -> String {
+        steps.map { "\(6 - $0[0]):\($0[1])" }.joined(separator: " ")
+    }
 
     var body: some View {
         ZStack {
@@ -59,7 +73,7 @@ struct ImportSongView: View {
 
     private var header: some View {
         HStack {
-            Text("IMPORT A SONG").font(Theme.display(20)).tracking(3).foregroundStyle(.white)
+            Text(editing == nil ? "IMPORT A SONG" : "EDIT SONG").font(Theme.display(20)).tracking(3).foregroundStyle(.white)
             Spacer()
             Button(action: onClose) {
                 Image(systemName: "xmark").font(.system(size: 16, weight: .semibold))
@@ -87,10 +101,14 @@ struct ImportSongView: View {
                 error = "No valid notes found. Use string:fret tokens like 1:0 1:3."
                 return
             }
-            store.add(title: title, bpm: Int(bpm), steps: steps)
+            if let editing {
+                store.update(id: editing.id, title: title, bpm: Int(bpm), steps: steps)
+            } else {
+                store.add(title: title, bpm: Int(bpm), steps: steps)
+            }
             onClose()
         } label: {
-            Text("ADD TO HIGHWAY").font(Theme.display(19)).tracking(3)
+            Text(editing == nil ? "ADD TO HIGHWAY" : "SAVE CHANGES").font(Theme.display(19)).tracking(3)
                 .frame(maxWidth: .infinity).frame(height: 58)
                 .foregroundStyle(Color(hex: 0x06222A))
                 .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.teal))

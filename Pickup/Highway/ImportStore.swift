@@ -46,6 +46,15 @@ final class ImportStore {
         save()
     }
 
+    func update(id: String, title: String, bpm: Int, steps: [(string: Int, fret: Int)]) {
+        guard !steps.isEmpty, let idx = songs.firstIndex(where: { $0.id == id }) else { return }
+        songs[idx] = ImportedSong(id: id,
+                                  title: title.isEmpty ? "My Song" : title,
+                                  bpm: max(30, min(240, bpm)),
+                                  steps: steps.map { [$0.string, $0.fret] })
+        save()
+    }
+
     func delete(_ id: String) {
         songs.removeAll { $0.id == id }
         save()

@@ -10,6 +10,7 @@ struct TabHighwayView: View {
     let onClose: () -> Void
     @State private var track: HighwayTrack?
     @State private var showImport = false
+    @State private var editingSong: ImportedSong?
     private let imports = ImportStore.shared
 
     var body: some View {
@@ -23,7 +24,8 @@ struct TabHighwayView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .sheet(isPresented: $showImport) { ImportSongView { showImport = false } }
+        .sheet(isPresented: $showImport) { ImportSongView(editing: nil) { showImport = false } }
+        .sheet(item: $editingSong) { song in ImportSongView(editing: song) { editingSong = nil } }
         .onAppear {
             #if DEBUG
             if let id = ProcessInfo.processInfo.environment["PICKUP_HIGHWAY"],
@@ -56,8 +58,8 @@ struct TabHighwayView: View {
             ScrollView {
                 VStack(spacing: 14) {
                     importButton
-                    ForEach(HighwayLibrary.all) { trackRow($0, deletable: false) }
                     ForEach(imports.tracks) { trackRow($0, deletable: true) }
+                    ForEach(HighwayLibrary.all) { trackRow($0, deletable: false) }
                 }
                 .padding(.horizontal, 22).padding(.top, 22)
             }
@@ -103,9 +105,14 @@ struct TabHighwayView: View {
             }
             .buttonStyle(.plain)
             if deletable {
+                Button { editingSong = imports.songs.first { $0.id == item.id } } label: {
+                    Image(systemName: "pencil").font(.system(size: 16))
+                        .foregroundStyle(Theme.frost.opacity(0.7)).padding(.leading, 14)
+                }
+                .buttonStyle(.plain)
                 Button { imports.delete(item.id) } label: {
                     Image(systemName: "trash").font(.system(size: 16))
-                        .foregroundStyle(Theme.frost.opacity(0.6)).padding(.leading, 12)
+                        .foregroundStyle(Theme.frost.opacity(0.6)).padding(.leading, 14)
                 }
                 .buttonStyle(.plain)
             }
