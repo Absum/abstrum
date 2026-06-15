@@ -13,6 +13,12 @@ struct FretPosition: Hashable {
     var finger: Int = 0
 }
 
+/// A timed strum exercise: strum `chord` once per beat at `bpm` for `beats` beats.
+struct StrumPattern: Hashable {
+    let bpm: Int
+    let beats: Int
+}
+
 struct LessonStep: Identifiable, Hashable {
     let id: Int
     let note: String          // "E" (or chord name for a chord step)
@@ -22,6 +28,8 @@ struct LessonStep: Identifiable, Hashable {
     let position: FretPosition?
     /// When set, this step is scored by chord (chroma) detection, not pitch.
     var chord: Chord? = nil
+    /// When set, this is a timed strum step (metronome + onset timing), not a hold.
+    var strum: StrumPattern? = nil
 }
 
 struct Lesson: Identifiable, Hashable {
@@ -126,9 +134,25 @@ enum LessonLibrary {
         id: "change-gc", title: "G ↔ C", subtitle: "The classic G–C change",
         tier: 2, prerequisite: "change-ad", steps: chordSteps(["G", "C", "G", "C"]))
 
+    // MARK: - Tier 2 — strumming in time (metronome + onset timing)
+
+    static let strumDown = Lesson(
+        id: "strum-down", title: "Downstrokes", subtitle: "One strum per beat, in time",
+        tier: 2, prerequisite: "change-gc", steps: strumSteps([("E", 70, 8)]))
+
+    static let strumKeep = Lesson(
+        id: "strum-keep", title: "Keep the Beat", subtitle: "Hold the tempo on A",
+        tier: 2, prerequisite: "strum-down", steps: strumSteps([("A", 80, 8)]))
+
+    static let firstSong = Lesson(
+        id: "first-song", title: "Your First Song", subtitle: "Em–C–G–D, a bar each",
+        tier: 2, prerequisite: "strum-keep",
+        steps: strumSteps([("Em", 80, 4), ("C", 80, 4), ("G", 80, 4), ("D", 80, 4)]))
+
     static let all: [Lesson] = [openStrings, stringSwitching, lowToHigh, lowENotes, aStringNotes,
                                 chordA, chordE, chordD, chordG, chordC,
-                                changeEA, changeAD, changeGC]
+                                changeEA, changeAD, changeGC,
+                                strumDown, strumKeep, firstSong]
 
     // MARK: - Step builders
 
@@ -139,6 +163,16 @@ enum LessonLibrary {
         ids.compactMap(chord).enumerated().map { index, chord in
             LessonStep(id: index, note: chord.name, octaveLabel: "", frequency: 0,
                        hint: "Strum the \(chord.name) chord", position: nil, chord: chord)
+        }
+    }
+
+    /// Timed strum steps: (chord id, bpm, beats).
+    private static func strumSteps(_ specs: [(String, Int, Int)]) -> [LessonStep] {
+        specs.enumerated().compactMap { index, spec in
+            guard let chord = chord(spec.0) else { return nil }
+            return LessonStep(id: index, note: chord.name, octaveLabel: "", frequency: 0,
+                              hint: "Strum \(chord.name) on every beat", position: nil,
+                              chord: chord, strum: StrumPattern(bpm: spec.1, beats: spec.2))
         }
     }
 
@@ -205,7 +239,12 @@ enum CourseLibrary {
         subtitle: "Tier 2 · Switch cleanly", tier: 2,
         lessons: [LessonLibrary.changeEA, LessonLibrary.changeAD, LessonLibrary.changeGC])
 
-    static let all: [Course] = [firstContact, firstNotes, firstChords, chordChanges]
+    static let strumming = Course(
+        id: "strumming", title: "Strumming & Songs",
+        subtitle: "Tier 2 · Play in time", tier: 2,
+        lessons: [LessonLibrary.strumDown, LessonLibrary.strumKeep, LessonLibrary.firstSong])
+
+    static let all: [Course] = [firstContact, firstNotes, firstChords, chordChanges, strumming]
 
     static func isUnlocked(_ course: Course, completed: Set<String>) -> Bool {
         guard let first = course.lessons.first else { return true }

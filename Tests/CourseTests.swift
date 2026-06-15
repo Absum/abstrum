@@ -8,11 +8,19 @@ import XCTest
 final class CourseTests: XCTestCase {
 
     func testCoursesExist() {
-        XCTAssertEqual(CourseLibrary.all.count, 4)
+        XCTAssertEqual(CourseLibrary.all.count, 5)
         XCTAssertEqual(CourseLibrary.firstContact.lessons.count, 3)
         XCTAssertEqual(CourseLibrary.firstNotes.lessons.count, 2)
         XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 5)
         XCTAssertEqual(CourseLibrary.chordChanges.lessons.count, 3)
+        XCTAssertEqual(CourseLibrary.strumming.lessons.count, 3)
+    }
+
+    func testStrumLessonsAreTimed() {
+        let song = LessonLibrary.firstSong
+        XCTAssertEqual(song.steps.count, 4)
+        XCTAssertTrue(song.steps.allSatisfy { $0.strum != nil })
+        XCTAssertEqual(song.steps.compactMap { $0.chord?.id }, ["Em", "C", "G", "D"])
     }
 
     func testChordLessonsTargetChords() {

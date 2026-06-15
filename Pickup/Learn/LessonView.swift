@@ -32,23 +32,92 @@ struct LessonView: View {
     private var practiceView: some View {
         VStack(spacing: 0) {
             topBar.padding(.top, 12)
+            if model.currentStep.strum != nil {
+                strumBody
+            } else {
+                Spacer()
+                if let chord = model.currentStep.chord {
+                    chordTarget(chord)
+                } else {
+                    targetNote
+                    if let position = model.currentStep.position {
+                        FretboardDiagram(positions: [position])
+                            .frame(width: 236, height: 138)
+                            .padding(.top, 14)
+                    }
+                }
+                hearItButton.padding(.top, 14)
+                Spacer().frame(height: 10)
+                detectedLine
+                Spacer()
+                prompt.padding(.bottom, 26)
+            }
+        }
+    }
+
+    // MARK: - Strum step
+
+    private var strumBody: some View {
+        VStack(spacing: 0) {
             Spacer()
             if let chord = model.currentStep.chord {
-                chordTarget(chord)
-            } else {
-                targetNote
-                if let position = model.currentStep.position {
-                    FretboardDiagram(positions: [position])
-                        .frame(width: 236, height: 138)
-                        .padding(.top, 14)
-                }
+                Text(chord.name)
+                    .font(.custom("Rajdhani-SemiBold", size: 56))
+                    .foregroundStyle(model.feedback == .correct ? Theme.teal : .white)
+                FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings,
+                                 barre: chord.barre, showFingers: true)
+                    .frame(width: 200, height: 134).padding(.top, 4)
             }
-            hearItButton.padding(.top, 14)
-            Spacer().frame(height: 10)
-            detectedLine
+            beatIndicator.padding(.top, 24)
             Spacer()
-            prompt.padding(.bottom, 26)
+            strumControl.padding(.horizontal, 30).padding(.bottom, 28)
         }
+    }
+
+    private var beatIndicator: some View {
+        let beats = model.currentStep.strum?.beats ?? 0
+        return HStack(spacing: 10) {
+            ForEach(0..<beats, id: \.self) { i in
+                Circle()
+                    .fill(model.strumHitBeats.contains(i) ? AnyShapeStyle(Theme.teal)
+                          : (i == model.strumBeat ? AnyShapeStyle(Theme.frost.opacity(0.85))
+                             : AnyShapeStyle(.white.opacity(0.15))))
+                    .frame(width: i == model.strumBeat ? 16 : 12, height: i == model.strumBeat ? 16 : 12)
+            }
+        }
+        .animation(.snappy, value: model.strumBeat)
+        .animation(.snappy, value: model.strumHits)
+    }
+
+    @ViewBuilder private var strumControl: some View {
+        if model.strumRunning {
+            Text(model.strumBeat < 0 ? "Get ready…" : "Strum on every click")
+                .font(Theme.title(17)).tracking(1).foregroundStyle(Theme.frost.opacity(0.8))
+                .frame(height: 54)
+        } else if model.strumFinished {
+            VStack(spacing: 12) {
+                Text("\(model.strumHits) / \(model.strumTarget) in time — almost!")
+                    .font(Theme.title(16)).foregroundStyle(Theme.frost.opacity(0.85))
+                strumButton("TRY AGAIN") { model.retryStrum() }
+            }
+        } else {
+            VStack(spacing: 10) {
+                Text(model.currentStep.hint)
+                    .font(Theme.body(15)).foregroundStyle(Theme.frost.opacity(0.7))
+                strumButton("START") { model.beginStrum() }
+            }
+        }
+    }
+
+    private func strumButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(Theme.display(17)).tracking(3)
+                .frame(maxWidth: .infinity).frame(height: 54)
+                .foregroundStyle(Color(hex: 0x06222A))
+                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.teal))
+                .shadow(color: Theme.teal.opacity(0.4), radius: 12, y: 4)
+        }
+        .buttonStyle(.plain)
     }
 
     private var topBar: some View {
