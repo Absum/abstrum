@@ -92,12 +92,33 @@ private struct HighwayRunner: View {
         .onDisappear { if model.isPlaying { model.toggle() } }
     }
 
+    private let speeds: [Double] = [0.5, 0.75, 1.0, 1.25]
+
     private var runner: some View {
         VStack(spacing: 0) {
             topBar.padding(.top, 12)
             highway
+            speedSelector.padding(.horizontal, 30).padding(.bottom, 10)
             controlButton.padding(.horizontal, 30).padding(.bottom, 18)
         }
+    }
+
+    private var speedSelector: some View {
+        HStack(spacing: 8) {
+            ForEach(speeds, id: \.self) { s in
+                Button { model.speed = s } label: {
+                    Text(String(format: "%g×", s))
+                        .font(Theme.title(14)).tracking(1)
+                        .foregroundStyle(model.speed == s ? Color(hex: 0x06222A) : Theme.frost.opacity(0.8))
+                        .frame(maxWidth: .infinity).frame(height: 34)
+                        .background(Capsule().fill(model.speed == s ? AnyShapeStyle(Theme.teal) : AnyShapeStyle(.white.opacity(0.07))))
+                        .overlay(Capsule().stroke(model.speed == s ? .clear : .white.opacity(0.14), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .disabled(model.isPlaying)
+            }
+        }
+        .opacity(model.isPlaying ? 0.4 : 1)
     }
 
     private var topBar: some View {
@@ -125,6 +146,7 @@ private struct HighwayRunner: View {
             let lanes = 6
             let laneW = size.width / CGFloat(lanes)
             let strikeY = size.height * 0.84
+            let r: CGFloat = min(laneW * 0.34, 22)
             func laneX(_ s: Int) -> CGFloat { laneW * (CGFloat(s) + 0.5) }
 
             // Lanes
@@ -139,6 +161,18 @@ private struct HighwayRunner: View {
             strike.move(to: CGPoint(x: 0, y: strikeY))
             strike.addLine(to: CGPoint(x: size.width, y: strikeY))
             ctx.stroke(strike, with: .color(Theme.teal.opacity(0.9)), lineWidth: 2)
+
+            // Hit flashes: an expanding, fading ring in the lane that was hit.
+            for (lane, t) in model.flashes {
+                let age = model.currentTime - t
+                guard age >= 0, age < 0.4 else { continue }
+                let p = age / 0.4
+                let radius = r + CGFloat(p) * r * 1.8
+                let rect = CGRect(x: laneX(lane) - radius, y: strikeY - radius,
+                                  width: radius * 2, height: radius * 2)
+                ctx.stroke(Path(ellipseIn: rect),
+                           with: .color(Theme.teal.opacity(0.9 * (1 - p))), lineWidth: 3)
+            }
             // String labels below the strike line
             for s in 0..<lanes {
                 ctx.draw(Text(stringLabels[s]).font(Theme.light(12)).foregroundColor(Theme.frost.opacity(0.5)),
@@ -146,7 +180,6 @@ private struct HighwayRunner: View {
             }
 
             // Notes
-            let r: CGFloat = min(laneW * 0.34, 22)
             for note in model.notes {
                 let y = strikeY - CGFloat(model.seconds(of: note) - model.currentTime) * speed
                 if y < -r * 2 || y > strikeY + r { continue }

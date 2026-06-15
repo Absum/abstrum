@@ -16,6 +16,10 @@ final class TabHighwayViewModel {
     var finished = false
     var hitIDs: Set<Int> = []
     var permissionDenied = false
+    /// Playback speed multiplier (scales tempo: lower = slower / easier).
+    var speed: Double = 1.0
+    /// Most recent hit time per string lane, for the strike-line flash.
+    var flashes: [Int: Double] = [:]
 
     private let audio = AudioEngine()
     private var startDate: Date?
@@ -32,7 +36,9 @@ final class TabHighwayViewModel {
     var total: Int { notes.count }
     var hits: Int { hitIDs.count }
 
-    func seconds(of note: HighwayNote) -> Double { note.beat * 60.0 / Double(track.bpm) }
+    func seconds(of note: HighwayNote) -> Double {
+        note.beat * 60.0 / Double(track.bpm) / max(0.25, speed)
+    }
     private var endTime: Double { (notes.map { seconds(of: $0) }.max() ?? 0) + 1.6 }
 
     func toggle() { isPlaying ? stop() : start() }
@@ -44,6 +50,7 @@ final class TabHighwayViewModel {
                 guard granted else { self.permissionDenied = true; return }
                 do { try self.audio.start() } catch { return }
                 self.hitIDs = []
+                self.flashes = [:]
                 self.finished = false
                 self.currentTime = -2.0          // 2-beat lead-in before the first note
                 self.startDate = Date().addingTimeInterval(2.0)
@@ -84,6 +91,7 @@ final class TabHighwayViewModel {
             let cents = abs(1200.0 * log2(frequency / n.frequency))
             if cents < centsTolerance {
                 hitIDs.insert(n.id)
+                flashes[n.string] = currentTime
                 break
             }
         }

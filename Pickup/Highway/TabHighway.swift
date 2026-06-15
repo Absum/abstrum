@@ -43,5 +43,14 @@ enum HighwayLibrary {
         track(id: "ode-to-joy", title: "Ode to Joy", credit: "Beethoven", bpm: 80,
               steps: [(5, 0), (5, 0), (5, 1), (5, 3), (5, 3), (5, 1), (5, 0), (4, 3),
                       (4, 1), (4, 1), (4, 3), (5, 0), (5, 0), (4, 3), (4, 3)]),
+        track(id: "twinkle", title: "Twinkle, Twinkle", credit: "Traditional", bpm: 90,
+              steps: [(4, 1), (4, 1), (5, 3), (5, 3), (5, 5), (5, 5), (5, 3),
+                      (5, 1), (5, 1), (5, 0), (5, 0), (4, 3), (4, 3), (4, 1)]),
+        track(id: "mary-lamb", title: "Mary Had a Little Lamb", credit: "Traditional", bpm: 90,
+              steps: [(5, 0), (4, 3), (4, 1), (4, 3), (5, 0), (5, 0), (5, 0),
+                      (4, 3), (4, 3), (4, 3), (5, 0), (5, 3), (5, 3)]),
+        track(id: "jingle", title: "Jingle Bells", credit: "Traditional", bpm: 100,
+              steps: [(5, 0), (5, 0), (5, 0), (5, 0), (5, 0), (5, 0),
+                      (5, 0), (5, 3), (4, 1), (4, 3), (5, 0)]),
     ]
 }
