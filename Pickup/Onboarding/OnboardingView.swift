@@ -19,11 +19,12 @@ struct OnboardingView: View {
         ZStack {
             ArcticBackground()
             VStack(spacing: 0) {
+                progressDots.padding(.top, 14)
                 content
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                progressDots.padding(.bottom, 24)
             }
             .padding(.horizontal, 32)
+            .padding(.bottom, 12)
         }
         .preferredColorScheme(.dark)
         .animation(.easeInOut(duration: 0.3), value: step)
