@@ -10,6 +10,7 @@ struct LearnHomeView: View {
     @State private var path: [Course] = []
     @State private var showPlayAlong = false
     @State private var showHighway = false
+    @State private var showStats = false
     private let store = ProgressStore.shared
 
     var body: some View {
@@ -18,6 +19,7 @@ struct LearnHomeView: View {
                 ArcticBackground()
                 VStack(spacing: 0) {
                     header.padding(.top, 12)
+                    statsStrip.padding(.horizontal, 22).padding(.top, 14)
                     ScrollView {
                         VStack(spacing: 16) {
                             playAlongCard
@@ -45,7 +47,9 @@ struct LearnHomeView: View {
         .fullScreenCover(isPresented: $showHighway) {
             TabHighwayView { showHighway = false }
         }
+        .sheet(isPresented: $showStats) { StatsView { showStats = false } }
         .onAppear {
+            store.refreshStreak()
             #if DEBUG
             if let raw = ProcessInfo.processInfo.environment["PICKUP_COMPLETE"] {
                 raw.split(separator: ",").forEach { store.markCompleted(String($0)) }
@@ -60,6 +64,17 @@ struct LearnHomeView: View {
             if ProcessInfo.processInfo.environment["PICKUP_HIGHWAY"] != nil {
                 showHighway = true
             }
+            if ProcessInfo.processInfo.environment["PICKUP_SEED_STATS"] != nil, store.xp == 0 {
+                let cal = Calendar.current, now = Date()
+                for offset in [6, 5, 4, 2, 1, 0] {
+                    store.registerActivity(on: cal.date(byAdding: .day, value: -offset, to: now)!)
+                }
+                store.awardXP(260)
+                store.addPracticeTime(64 * 60)
+            }
+            if ProcessInfo.processInfo.environment["PICKUP_STATS"] != nil {
+                showStats = true
+            }
             #endif
         }
     }
@@ -69,6 +84,40 @@ struct LearnHomeView: View {
             Text("PICKUP").font(Theme.display(22)).tracking(10).foregroundStyle(.white)
             Text("LEARN").font(Theme.light(12)).tracking(4).foregroundStyle(Theme.frost.opacity(0.6))
         }
+    }
+
+    private var statsStrip: some View {
+        Button { showStats = true } label: {
+            HStack(spacing: 0) {
+                stat(icon: "flame.fill", value: "\(store.currentStreak)", label: "STREAK",
+                     tint: store.isActiveToday() ? Theme.teal : Theme.frost.opacity(0.5))
+                statDivider
+                stat(icon: "bolt.fill", value: "LVL \(store.level)", label: "LEVEL", tint: Theme.teal)
+                statDivider
+                stat(icon: "clock.fill", value: "\(store.practiceMinutes)m", label: "PRACTICE", tint: Theme.teal)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.frost.opacity(0.4)).padding(.trailing, 14)
+            }
+            .padding(.vertical, 12)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.06)))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.white.opacity(0.12), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func stat(icon: String, value: String, label: String, tint: Color) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: icon).font(.system(size: 14)).foregroundStyle(tint)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(value).font(Theme.display(15)).foregroundStyle(.white)
+                Text(label).font(Theme.light(9)).tracking(1).foregroundStyle(Theme.frost.opacity(0.55))
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var statDivider: some View {
+        Rectangle().fill(.white.opacity(0.10)).frame(width: 1, height: 26)
     }
 
     private var playAlongCard: some View {

@@ -88,7 +88,10 @@ final class ChordPracticeViewModel {
             self.score = value
             if value >= self.threshold {
                 self.holdFrames += 1
-                if self.holdFrames >= self.holdRequired { self.matched = true }
+                if self.holdFrames >= self.holdRequired {
+                    if !self.matched { ProgressStore.shared.awardXP(10) }
+                    self.matched = true
+                }
             } else {
                 self.holdFrames = 0
             }

@@ -143,6 +143,7 @@ final class PlayAlongViewModel {
         isPlaying = false
         finished = true
         barIndex = max(0, bars.count - 1)
+        ProgressStore.shared.awardXP(15)
     }
 
     private func process(_ samples: [Float], _ sampleRate: Double) {
