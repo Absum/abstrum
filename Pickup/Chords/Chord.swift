@@ -6,12 +6,13 @@
 import Foundation
 
 enum ChordQuality: String, CaseIterable, Hashable {
-    case major, minor, dom7, min7, maj7, sus2, sus4
+    case major, minor, power, dom7, min7, maj7, sus2, sus4
 
     var label: String {
         switch self {
         case .major: return "Major"
         case .minor: return "Minor"
+        case .power: return "5"
         case .dom7:  return "7"
         case .min7:  return "m7"
         case .maj7:  return "maj7"
@@ -25,6 +26,7 @@ enum ChordQuality: String, CaseIterable, Hashable {
         switch self {
         case .major: return ""
         case .minor: return "m"
+        case .power: return "5"
         case .dom7:  return "7"
         case .min7:  return "m7"
         case .maj7:  return "maj7"
@@ -38,6 +40,7 @@ enum ChordQuality: String, CaseIterable, Hashable {
         switch self {
         case .major: return [0, 4, 7]
         case .minor: return [0, 3, 7]
+        case .power: return [0, 7]
         case .dom7:  return [0, 4, 7, 10]
         case .min7:  return [0, 3, 7, 10]
         case .maj7:  return [0, 4, 7, 11]
@@ -160,8 +163,14 @@ enum ChordBank {
         make("D", .sus4, [p(2, 0), p(3, 2), p(4, 3), p(5, 3)], muted: [0, 1]),
         make("E", .sus4, [p(0, 0), p(1, 2), p(2, 2), p(3, 2), p(4, 0), p(5, 0)]),
     ]
+    private static let powers: [Chord] = [
+        make("E", .power, [p(0, 0), p(1, 2), p(2, 2)], muted: [3, 4, 5]),
+        make("A", .power, [p(1, 0), p(2, 2), p(3, 2)], muted: [0, 4, 5]),
+        make("D", .power, [p(2, 0), p(3, 2), p(4, 3)], muted: [0, 1, 5]),
+        make("F", .power, [p(0, 1), p(1, 3), p(2, 3)], muted: [3, 4, 5]),
+    ]
 
-    static let all: [Chord] = majors + minors + dom7s + min7s + maj7s + sus2s + sus4s
+    static let all: [Chord] = majors + minors + powers + dom7s + min7s + maj7s + sus2s + sus4s
 
     /// Chords filtered by quality (nil = all).
     static func chords(quality: ChordQuality?) -> [Chord] {

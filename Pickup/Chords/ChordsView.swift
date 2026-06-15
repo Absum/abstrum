@@ -42,6 +42,10 @@ struct ChordsView: View {
                let chord = ChordBank.all.first(where: { $0.id == id }) {
                 activeChord = chord
             }
+            if let raw = ProcessInfo.processInfo.environment["PICKUP_CHORD_FILTER"],
+               let quality = ChordQuality(rawValue: raw) {
+                filter = quality
+            }
             #endif
         }
     }
