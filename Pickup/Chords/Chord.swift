@@ -109,7 +109,9 @@ enum ChordBank {
     static let rootNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
     private static func pc(of root: String) -> Int { rootNames.firstIndex(of: root) ?? 0 }
 
-    private static func p(_ string: Int, _ fret: Int) -> FretPosition { FretPosition(string: string, fret: fret) }
+    private static func p(_ string: Int, _ fret: Int, _ finger: Int = 0) -> FretPosition {
+        FretPosition(string: string, fret: fret, finger: finger)
+    }
 
     private static func make(_ root: String, _ quality: ChordQuality,
                              _ positions: [FretPosition], muted: [Int] = []) -> Chord {
@@ -121,63 +123,65 @@ enum ChordBank {
 
     // MARK: - Curated open voicings (kept for their nicer open shapes)
 
+    // Fretted notes carry their standard fretting-hand finger (1 index … 4 pinky).
     private static let curatedOpen: [Chord] = [
-        make("E", .major, [p(0, 0), p(1, 2), p(2, 2), p(3, 1), p(4, 0), p(5, 0)]),
-        make("A", .major, [p(1, 0), p(2, 2), p(3, 2), p(4, 2), p(5, 0)], muted: [0]),
-        make("D", .major, [p(2, 0), p(3, 2), p(4, 3), p(5, 2)], muted: [0, 1]),
-        make("G", .major, [p(0, 3), p(1, 2), p(2, 0), p(3, 0), p(4, 0), p(5, 3)]),
-        make("C", .major, [p(1, 3), p(2, 2), p(3, 0), p(4, 1), p(5, 0)], muted: [0]),
-        make("E", .minor, [p(0, 0), p(1, 2), p(2, 2), p(3, 0), p(4, 0), p(5, 0)]),
-        make("A", .minor, [p(1, 0), p(2, 2), p(3, 2), p(4, 1), p(5, 0)], muted: [0]),
-        make("D", .minor, [p(2, 0), p(3, 2), p(4, 3), p(5, 1)], muted: [0, 1]),
-        make("E", .dom7, [p(0, 0), p(1, 2), p(2, 0), p(3, 1), p(4, 0), p(5, 0)]),
-        make("A", .dom7, [p(1, 0), p(2, 2), p(3, 0), p(4, 2), p(5, 0)], muted: [0]),
-        make("D", .dom7, [p(2, 0), p(3, 2), p(4, 1), p(5, 2)], muted: [0, 1]),
-        make("G", .dom7, [p(0, 3), p(1, 2), p(2, 0), p(3, 0), p(4, 0), p(5, 1)]),
-        make("C", .dom7, [p(1, 3), p(2, 2), p(3, 3), p(4, 1), p(5, 0)], muted: [0]),
-        make("B", .dom7, [p(1, 2), p(2, 1), p(3, 2), p(4, 0), p(5, 2)], muted: [0]),
-        make("E", .min7, [p(0, 0), p(1, 2), p(2, 2), p(3, 0), p(4, 3), p(5, 0)]),
-        make("A", .min7, [p(1, 0), p(2, 2), p(3, 0), p(4, 1), p(5, 0)], muted: [0]),
-        make("D", .min7, [p(2, 0), p(3, 2), p(4, 1), p(5, 1)], muted: [0, 1]),
-        make("C", .maj7, [p(1, 3), p(2, 2), p(3, 0), p(4, 0), p(5, 0)], muted: [0]),
-        make("A", .maj7, [p(1, 0), p(2, 2), p(3, 1), p(4, 2), p(5, 0)], muted: [0]),
-        make("D", .maj7, [p(2, 0), p(3, 2), p(4, 2), p(5, 2)], muted: [0, 1]),
-        make("F", .maj7, [p(2, 3), p(3, 2), p(4, 1), p(5, 0)], muted: [0, 1]),
-        make("G", .maj7, [p(0, 3), p(1, 2), p(2, 0), p(3, 0), p(4, 0), p(5, 2)]),
-        make("E", .maj7, [p(0, 0), p(1, 2), p(2, 1), p(3, 1), p(4, 0), p(5, 0)]),
-        make("A", .sus2, [p(1, 0), p(2, 2), p(3, 2), p(4, 0), p(5, 0)], muted: [0]),
-        make("D", .sus2, [p(2, 0), p(3, 2), p(4, 3), p(5, 0)], muted: [0, 1]),
-        make("A", .sus4, [p(1, 0), p(2, 2), p(3, 2), p(4, 3), p(5, 0)], muted: [0]),
-        make("D", .sus4, [p(2, 0), p(3, 2), p(4, 3), p(5, 3)], muted: [0, 1]),
-        make("E", .sus4, [p(0, 0), p(1, 2), p(2, 2), p(3, 2), p(4, 0), p(5, 0)]),
+        make("E", .major, [p(0, 0), p(1, 2, 2), p(2, 2, 3), p(3, 1, 1), p(4, 0), p(5, 0)]),
+        make("A", .major, [p(1, 0), p(2, 2, 1), p(3, 2, 2), p(4, 2, 3), p(5, 0)], muted: [0]),
+        make("D", .major, [p(2, 0), p(3, 2, 1), p(4, 3, 3), p(5, 2, 2)], muted: [0, 1]),
+        make("G", .major, [p(0, 3, 2), p(1, 2, 1), p(2, 0), p(3, 0), p(4, 0), p(5, 3, 3)]),
+        make("C", .major, [p(1, 3, 3), p(2, 2, 2), p(3, 0), p(4, 1, 1), p(5, 0)], muted: [0]),
+        make("E", .minor, [p(0, 0), p(1, 2, 2), p(2, 2, 3), p(3, 0), p(4, 0), p(5, 0)]),
+        make("A", .minor, [p(1, 0), p(2, 2, 2), p(3, 2, 3), p(4, 1, 1), p(5, 0)], muted: [0]),
+        make("D", .minor, [p(2, 0), p(3, 2, 2), p(4, 3, 3), p(5, 1, 1)], muted: [0, 1]),
+        make("E", .dom7, [p(0, 0), p(1, 2, 2), p(2, 0), p(3, 1, 1), p(4, 0), p(5, 0)]),
+        make("A", .dom7, [p(1, 0), p(2, 2, 2), p(3, 0), p(4, 2, 3), p(5, 0)], muted: [0]),
+        make("D", .dom7, [p(2, 0), p(3, 2, 2), p(4, 1, 1), p(5, 2, 3)], muted: [0, 1]),
+        make("G", .dom7, [p(0, 3, 3), p(1, 2, 2), p(2, 0), p(3, 0), p(4, 0), p(5, 1, 1)]),
+        make("C", .dom7, [p(1, 3, 3), p(2, 2, 2), p(3, 3, 4), p(4, 1, 1), p(5, 0)], muted: [0]),
+        make("B", .dom7, [p(1, 2, 2), p(2, 1, 1), p(3, 2, 3), p(4, 0), p(5, 2, 4)], muted: [0]),
+        make("E", .min7, [p(0, 0), p(1, 2, 1), p(2, 2, 2), p(3, 0), p(4, 3, 3), p(5, 0)]),
+        make("A", .min7, [p(1, 0), p(2, 2, 2), p(3, 0), p(4, 1, 1), p(5, 0)], muted: [0]),
+        make("D", .min7, [p(2, 0), p(3, 2, 3), p(4, 1, 1), p(5, 1, 1)], muted: [0, 1]),
+        make("C", .maj7, [p(1, 3, 3), p(2, 2, 2), p(3, 0), p(4, 0), p(5, 0)], muted: [0]),
+        make("A", .maj7, [p(1, 0), p(2, 2, 2), p(3, 1, 1), p(4, 2, 3), p(5, 0)], muted: [0]),
+        make("D", .maj7, [p(2, 0), p(3, 2, 1), p(4, 2, 2), p(5, 2, 3)], muted: [0, 1]),
+        make("F", .maj7, [p(2, 3, 3), p(3, 2, 2), p(4, 1, 1), p(5, 0)], muted: [0, 1]),
+        make("G", .maj7, [p(0, 3, 3), p(1, 2, 2), p(2, 0), p(3, 0), p(4, 0), p(5, 2, 1)]),
+        make("E", .maj7, [p(0, 0), p(1, 2, 3), p(2, 1, 1), p(3, 1, 1), p(4, 0), p(5, 0)]),
+        make("A", .sus2, [p(1, 0), p(2, 2, 1), p(3, 2, 2), p(4, 0), p(5, 0)], muted: [0]),
+        make("D", .sus2, [p(2, 0), p(3, 2, 1), p(4, 3, 3), p(5, 0)], muted: [0, 1]),
+        make("A", .sus4, [p(1, 0), p(2, 2, 1), p(3, 2, 2), p(4, 3, 3), p(5, 0)], muted: [0]),
+        make("D", .sus4, [p(2, 0), p(3, 2, 1), p(4, 3, 2), p(5, 3, 3)], muted: [0, 1]),
+        make("E", .sus4, [p(0, 0), p(1, 2, 1), p(2, 2, 2), p(3, 2, 3), p(4, 0), p(5, 0)]),
     ]
 
     // MARK: - Movable shapes (offsets from the base fret; -1 = muted, 0 = barre)
 
     private struct Shape {
         let offsets: [Int]
+        let fingers: [Int]    // per string; barre/open strings handled separately
         let rootString: Int
         let rootOpenPC: Int   // open pitch class of the root string (E=4, A=9, D=2)
         let isBarre: Bool
     }
 
     private static let shapes: [ChordQuality: [Shape]] = [
-        .major: [Shape(offsets: [0, 2, 2, 1, 0, 0], rootString: 0, rootOpenPC: 4, isBarre: true),
-                 Shape(offsets: [-1, 0, 2, 2, 2, 0], rootString: 1, rootOpenPC: 9, isBarre: true)],
-        .minor: [Shape(offsets: [0, 2, 2, 0, 0, 0], rootString: 0, rootOpenPC: 4, isBarre: true),
-                 Shape(offsets: [-1, 0, 2, 2, 1, 0], rootString: 1, rootOpenPC: 9, isBarre: true)],
-        .dom7:  [Shape(offsets: [0, 2, 0, 1, 0, 0], rootString: 0, rootOpenPC: 4, isBarre: true),
-                 Shape(offsets: [-1, 0, 2, 0, 2, 0], rootString: 1, rootOpenPC: 9, isBarre: true)],
-        .min7:  [Shape(offsets: [0, 2, 0, 0, 0, 0], rootString: 0, rootOpenPC: 4, isBarre: true),
-                 Shape(offsets: [-1, 0, 2, 0, 1, 0], rootString: 1, rootOpenPC: 9, isBarre: true)],
-        .maj7:  [Shape(offsets: [0, 2, 1, 1, 0, 0], rootString: 0, rootOpenPC: 4, isBarre: true),
-                 Shape(offsets: [-1, 0, 2, 1, 2, 0], rootString: 1, rootOpenPC: 9, isBarre: true)],
-        .sus4:  [Shape(offsets: [0, 2, 2, 2, 0, 0], rootString: 0, rootOpenPC: 4, isBarre: true),
-                 Shape(offsets: [-1, 0, 2, 2, 3, 0], rootString: 1, rootOpenPC: 9, isBarre: true)],
-        .sus2:  [Shape(offsets: [-1, 0, 2, 2, 0, 0], rootString: 1, rootOpenPC: 9, isBarre: true)],
-        .power: [Shape(offsets: [0, 2, 2, -1, -1, -1], rootString: 0, rootOpenPC: 4, isBarre: false),
-                 Shape(offsets: [-1, 0, 2, 2, -1, -1], rootString: 1, rootOpenPC: 9, isBarre: false),
-                 Shape(offsets: [-1, -1, 0, 2, 3, -1], rootString: 2, rootOpenPC: 2, isBarre: false)],
+        .major: [Shape(offsets: [0, 2, 2, 1, 0, 0], fingers: [1, 3, 4, 2, 1, 1], rootString: 0, rootOpenPC: 4, isBarre: true),
+                 Shape(offsets: [-1, 0, 2, 2, 2, 0], fingers: [0, 1, 2, 3, 4, 1], rootString: 1, rootOpenPC: 9, isBarre: true)],
+        .minor: [Shape(offsets: [0, 2, 2, 0, 0, 0], fingers: [1, 3, 4, 1, 1, 1], rootString: 0, rootOpenPC: 4, isBarre: true),
+                 Shape(offsets: [-1, 0, 2, 2, 1, 0], fingers: [0, 1, 3, 4, 2, 1], rootString: 1, rootOpenPC: 9, isBarre: true)],
+        .dom7:  [Shape(offsets: [0, 2, 0, 1, 0, 0], fingers: [1, 3, 1, 2, 1, 1], rootString: 0, rootOpenPC: 4, isBarre: true),
+                 Shape(offsets: [-1, 0, 2, 0, 2, 0], fingers: [0, 1, 2, 1, 3, 1], rootString: 1, rootOpenPC: 9, isBarre: true)],
+        .min7:  [Shape(offsets: [0, 2, 0, 0, 0, 0], fingers: [1, 3, 1, 1, 1, 1], rootString: 0, rootOpenPC: 4, isBarre: true),
+                 Shape(offsets: [-1, 0, 2, 0, 1, 0], fingers: [0, 1, 3, 1, 2, 1], rootString: 1, rootOpenPC: 9, isBarre: true)],
+        .maj7:  [Shape(offsets: [0, 2, 1, 1, 0, 0], fingers: [1, 4, 2, 3, 1, 1], rootString: 0, rootOpenPC: 4, isBarre: true),
+                 Shape(offsets: [-1, 0, 2, 1, 2, 0], fingers: [0, 1, 3, 2, 4, 1], rootString: 1, rootOpenPC: 9, isBarre: true)],
+        .sus4:  [Shape(offsets: [0, 2, 2, 2, 0, 0], fingers: [1, 2, 3, 4, 1, 1], rootString: 0, rootOpenPC: 4, isBarre: true),
+                 Shape(offsets: [-1, 0, 2, 2, 3, 0], fingers: [0, 1, 2, 3, 4, 1], rootString: 1, rootOpenPC: 9, isBarre: true)],
+        .sus2:  [Shape(offsets: [-1, 0, 2, 2, 0, 0], fingers: [0, 1, 2, 3, 1, 1], rootString: 1, rootOpenPC: 9, isBarre: true)],
+        .power: [Shape(offsets: [0, 2, 2, -1, -1, -1], fingers: [1, 3, 4, 0, 0, 0], rootString: 0, rootOpenPC: 4, isBarre: false),
+                 Shape(offsets: [-1, 0, 2, 2, -1, -1], fingers: [0, 1, 3, 4, 0, 0], rootString: 1, rootOpenPC: 9, isBarre: false),
+                 Shape(offsets: [-1, -1, 0, 2, 3, -1], fingers: [0, 0, 1, 3, 4, 0], rootString: 2, rootOpenPC: 2, isBarre: false)],
     ]
 
     private static func generate(rootPC: Int, quality: ChordQuality) -> Chord? {
@@ -194,7 +198,11 @@ enum ChordBank {
         var muted: [Int] = []
         for s in 0..<6 {
             let o = pick.shape.offsets[s]
-            if o < 0 { muted.append(s) } else { positions.append(p(s, base + o)) }
+            if o < 0 { muted.append(s) }
+            else {
+                let fret = base + o
+                positions.append(p(s, fret, fret > 0 ? pick.shape.fingers[s] : 0))
+            }
         }
         let root = rootNames[rootPC]
         let classes = Set(quality.intervals.map { (rootPC + $0) % 12 })

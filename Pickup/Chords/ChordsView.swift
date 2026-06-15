@@ -9,6 +9,7 @@ struct ChordsView: View {
     @State private var activeChord: Chord?
     @State private var filter: ChordQuality?
     @State private var showChanges = false
+    @AppStorage("showFingerNumbers") private var showFingers = false
 
     private let columns = [GridItem(.flexible(), spacing: 14),
                            GridItem(.flexible(), spacing: 14)]
@@ -22,6 +23,7 @@ struct ChordsView: View {
                 header.padding(.top, 12)
                 practiceChangesButton.padding(.top, 14).padding(.horizontal, 20)
                 filterBar.padding(.top, 14)
+                fingerToggle.padding(.top, 12)
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 14) {
                         ForEach(chords) { chord in
@@ -93,6 +95,31 @@ struct ChordsView: View {
         }
     }
 
+    private var fingerToggle: some View {
+        VStack(spacing: 8) {
+            Button { showFingers.toggle() } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: showFingers ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("SHOW FINGER NUMBERS").font(Theme.title(13)).tracking(1)
+                    Spacer()
+                }
+                .foregroundStyle(showFingers ? Theme.teal : Theme.frost.opacity(0.75))
+                .padding(.horizontal, 16).frame(height: 38)
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.white.opacity(0.06)))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(showFingers ? Theme.teal.opacity(0.5) : .white.opacity(0.12), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            if showFingers {
+                Text("1 index   ·   2 middle   ·   3 ring   ·   4 pinky")
+                    .font(Theme.light(11)).tracking(1).foregroundStyle(Theme.frost.opacity(0.65))
+            }
+        }
+        .padding(.horizontal, 20)
+        .animation(.easeInOut(duration: 0.18), value: showFingers)
+    }
+
     private func chip(label: String, active: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
@@ -112,7 +139,8 @@ struct ChordsView: View {
                 Spacer()
                 Text(chord.quality.label).font(Theme.body(12)).foregroundStyle(Theme.frost.opacity(0.6))
             }
-            FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings, barre: chord.barre)
+            FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings,
+                             barre: chord.barre, showFingers: showFingers)
                 .frame(height: 124)
         }
         .padding(16)

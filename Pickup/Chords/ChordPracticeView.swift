@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ChordPracticeView: View {
     @State private var model: ChordPracticeViewModel
+    @AppStorage("showFingerNumbers") private var showFingers = false
     private let onClose: () -> Void
 
     init(chord: Chord, onClose: @escaping () -> Void) {
@@ -33,9 +34,16 @@ struct ChordPracticeView: View {
                         .font(Theme.light(13)).tracking(5).foregroundStyle(Theme.frost.opacity(0.7))
                 }
 
-                FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings, barre: chord.barre)
+                FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings,
+                                 barre: chord.barre, showFingers: showFingers)
                     .frame(width: 286, height: 232)
                     .padding(.top, 28)
+
+                if showFingers {
+                    Text("1 index   ·   2 middle   ·   3 ring   ·   4 pinky")
+                        .font(Theme.light(11)).tracking(1).foregroundStyle(Theme.frost.opacity(0.6))
+                        .padding(.top, 10)
+                }
 
                 Spacer(minLength: 28)
 

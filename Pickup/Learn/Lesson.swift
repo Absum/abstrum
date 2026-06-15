@@ -6,9 +6,11 @@
 import Foundation
 
 /// Where a note is played: which string (0 = low E … 5 = high e) and fret (0 = open).
+/// `finger` is the fretting hand finger (1 = index … 4 = pinky; 0 = unspecified/open).
 struct FretPosition: Hashable {
     let string: Int
     let fret: Int
+    var finger: Int = 0
 }
 
 struct LessonStep: Identifiable, Hashable {

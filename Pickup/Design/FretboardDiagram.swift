@@ -14,6 +14,8 @@ struct FretboardDiagram: View {
     var barre: Barre? = nil
     var fretCount: Int = 4
     var tint: Color = Theme.teal
+    /// Show the fretting-hand finger (1–4) inside each dot.
+    var showFingers: Bool = false
 
     private let markerOutline = Color(hex: 0x0A1F27)
 
@@ -85,6 +87,11 @@ struct FretboardDiagram: View {
                     let x2 = x(barre.toString) + r * 0.6
                     let bar = CGRect(x: x1, y: y - r * 0.9, width: x2 - x1, height: r * 1.8)
                     ctx.fill(Path(roundedRect: bar, cornerRadius: r * 0.9), with: .color(tint))
+                    if showFingers {
+                        ctx.draw(Text("1").font(.system(size: r * 1.1, weight: .bold))
+                                    .foregroundColor(markerOutline),
+                                 at: CGPoint(x: x(barre.fromString), y: y))
+                    }
                 }
             }
 
@@ -105,6 +112,11 @@ struct FretboardDiagram: View {
                         let dot = CGRect(x: x(pos.string) - r, y: y - r, width: 2 * r, height: 2 * r)
                         ctx.fill(Path(ellipseIn: dot), with: .color(tint))
                         ctx.stroke(Path(ellipseIn: dot), with: .color(markerOutline.opacity(0.55)), lineWidth: 1.5)
+                        if showFingers && pos.finger > 0 {
+                            ctx.draw(Text("\(pos.finger)").font(.system(size: r * 1.1, weight: .bold))
+                                        .foregroundColor(markerOutline),
+                                     at: CGPoint(x: x(pos.string), y: y))
+                        }
                     }
                 }
             }
