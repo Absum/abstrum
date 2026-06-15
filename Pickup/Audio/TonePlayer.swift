@@ -44,20 +44,24 @@ final class TonePlayer {
         let samples = ToneSynth.strum(frequencies: frequencies, sampleRate: sampleRate, strumDelay: strumDelay)
         guard let buffer = makeBuffer(samples) else { return }
 
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, mode: .default, options: [])
-        try? session.setActive(true)
-        if !engine.isRunning { try? engine.start() }
+        // Cold start only — once running we just schedule buffers, so a sequence
+        // (song preview) doesn't churn the session or reset the player per note.
+        if !engine.isRunning {
+            let session = AVAudioSession.sharedInstance()
+            try? session.setCategory(.playback, mode: .default, options: [])
+            try? session.setActive(true)
+            try? engine.start()
+        }
 
-        player.stop()
-        player.scheduleBuffer(buffer, at: nil, options: [.interrupts]) { [weak self] in
+        // Only a one-shot (non-keepAlive) stops the engine when its note finishes.
+        let completion: AVAudioNodeCompletionHandler? = keepAlive ? nil : { [weak self] in
             DispatchQueue.main.async {
-                guard let self else { return }
-                if !self.keepAlive { self.stop() }
-                self.onFinished?()
+                self?.stop()
+                self?.onFinished?()
             }
         }
-        player.play()
+        player.scheduleBuffer(buffer, at: nil, options: [.interrupts], completionHandler: completion)
+        if !player.isPlaying { player.play() }
     }
 
     private func makeBuffer(_ samples: [Float]) -> AVAudioPCMBuffer? {
