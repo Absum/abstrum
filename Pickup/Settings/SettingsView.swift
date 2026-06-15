@@ -7,6 +7,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @State private var settings = AudioSettings.shared
+    @State private var reminders = ReminderScheduler.shared
 
     // Mic sensitivity 0…1 maps (inverted) to the RMS gate: higher = lower gate.
     private let gateMin: Double = 0.0008   // most sensitive
@@ -29,6 +30,7 @@ struct SettingsView: View {
                 header.padding(.top, 12)
                 ScrollView {
                     VStack(spacing: 16) {
+                        reminderCard
                         sliderCard(title: "MIC SENSITIVITY",
                                    subtitle: "Higher picks up quieter or softer playing.",
                                    value: sensitivity, range: 0...1,
@@ -53,6 +55,51 @@ struct SettingsView: View {
             Text("PICKUP").font(Theme.display(22)).tracking(10).foregroundStyle(.white)
             Text("SETTINGS").font(Theme.light(12)).tracking(4).foregroundStyle(Theme.frost.opacity(0.6))
         }
+    }
+
+    private var reminderEnabled: Binding<Bool> {
+        Binding(get: { reminders.enabled }, set: { on in
+            reminders.enabled = on
+            if on { reminders.requestAuthorization() }
+        })
+    }
+
+    private var reminderTime: Binding<Date> {
+        Binding(
+            get: { Calendar.current.date(bySettingHour: reminders.hour, minute: reminders.minute,
+                                         second: 0, of: Date()) ?? Date() },
+            set: { date in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+                reminders.hour = c.hour ?? 19
+                reminders.minute = c.minute ?? 0
+            }
+        )
+    }
+
+    private var reminderCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("DAILY REMINDER").font(Theme.display(18)).tracking(2).foregroundStyle(.white)
+                    Text("A nudge to keep your streak alive.")
+                        .font(Theme.body(13)).foregroundStyle(Theme.frost.opacity(0.65))
+                }
+                Spacer()
+                Toggle("", isOn: reminderEnabled).labelsHidden().tint(Theme.teal)
+            }
+            if reminders.enabled {
+                HStack {
+                    Text("Remind me at").font(Theme.body(14)).foregroundStyle(Theme.frost.opacity(0.8))
+                    Spacer()
+                    DatePicker("", selection: reminderTime, displayedComponents: .hourAndMinute)
+                        .labelsHidden().colorScheme(.dark)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(18)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white.opacity(0.06)))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.12), lineWidth: 1))
     }
 
     private func sliderCard(title: String, subtitle: String,
