@@ -20,8 +20,12 @@ final class TabHighwayViewModel {
     var speed: Double = 1.0
     /// Most recent hit time per string lane, for the strike-line flash.
     var flashes: [Int: Double] = [:]
+    /// Listen mode: the app plays the melody (synth) instead of scoring the mic.
+    var isPreviewing = false
 
     private let audio = AudioEngine()
+    private let preview = TonePlayer()
+    private var playedIDs: Set<Int> = []
     private var startDate: Date?
     private var clock: Timer?
     private let hitWindow = 0.30      // seconds around a note's strike time
@@ -30,6 +34,7 @@ final class TabHighwayViewModel {
     init(track: HighwayTrack) {
         self.track = track
         audio.onResult = { [weak self] in self?.handle($0) }
+        preview.keepAlive = true
     }
 
     var notes: [HighwayNote] { track.notes }
@@ -43,7 +48,28 @@ final class TabHighwayViewModel {
 
     func toggle() { isPlaying ? stop() : start() }
 
+    // MARK: - Listen (the app plays the melody; no mic)
+
+    func togglePreview() { isPreviewing ? stopPreview() : startPreview() }
+
+    private func startPreview() {
+        guard !isPlaying else { return }
+        hitIDs = []; flashes = [:]; playedIDs = []; finished = false
+        currentTime = -2.0
+        startDate = Date().addingTimeInterval(2.0)
+        isPreviewing = true
+        startClock()
+    }
+
+    private func stopPreview() {
+        clock?.invalidate(); clock = nil
+        preview.stop()
+        isPreviewing = false
+        currentTime = 0; hitIDs = []; flashes = [:]; playedIDs = []
+    }
+
     private func start() {
+        if isPreviewing { stopPreview() }
         AVAudioApplication.requestRecordPermission { [weak self] granted in
             DispatchQueue.main.async {
                 guard let self else { return }
@@ -70,9 +96,23 @@ final class TabHighwayViewModel {
 
     private func startClock() {
         clock = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
-            guard let self, let startDate = self.startDate else { return }
-            self.currentTime = Date().timeIntervalSince(startDate)
-            if self.currentTime > self.endTime { self.finish() }
+            self?.tick()
+        }
+    }
+
+    private func tick() {
+        guard let startDate else { return }
+        currentTime = Date().timeIntervalSince(startDate)
+        if isPreviewing {
+            for note in notes where !playedIDs.contains(note.id) && seconds(of: note) <= currentTime {
+                preview.playNote(note.frequency)
+                playedIDs.insert(note.id)
+                hitIDs.insert(note.id)
+                flashes[note.string] = currentTime
+            }
+            if currentTime > endTime { stopPreview() }
+        } else if currentTime > endTime {
+            finish()
         }
     }
 

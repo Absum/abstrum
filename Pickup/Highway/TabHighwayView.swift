@@ -53,7 +53,15 @@ struct TabHighwayView: View {
                         Button { track = item } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(item.title).font(Theme.display(22)).foregroundStyle(.white)
+                                    HStack(spacing: 8) {
+                                        Text(item.title).font(Theme.display(22)).foregroundStyle(.white)
+                                        if item.licensed {
+                                            Text("LICENSED").font(Theme.body(10)).tracking(1)
+                                                .foregroundStyle(Color(hex: 0x06222A))
+                                                .padding(.horizontal, 7).padding(.vertical, 2)
+                                                .background(Capsule().fill(Color.orange.opacity(0.85)))
+                                        }
+                                    }
                                     Text("\(item.credit) · \(item.bpm) BPM").font(Theme.body(13))
                                         .foregroundStyle(Theme.frost.opacity(0.65))
                                 }
@@ -89,7 +97,10 @@ private struct HighwayRunner: View {
         ZStack {
             if model.finished { results } else { runner }
         }
-        .onDisappear { if model.isPlaying { model.toggle() } }
+        .onDisappear {
+            if model.isPlaying { model.toggle() }
+            if model.isPreviewing { model.togglePreview() }
+        }
     }
 
     private let speeds: [Double] = [0.5, 0.75, 1.0, 1.25]
@@ -99,8 +110,24 @@ private struct HighwayRunner: View {
             topBar.padding(.top, 12)
             highway
             speedSelector.padding(.horizontal, 30).padding(.bottom, 10)
+            if !model.isPlaying { listenButton.padding(.horizontal, 30).padding(.bottom, 10) }
             controlButton.padding(.horizontal, 30).padding(.bottom, 18)
         }
+    }
+
+    private var listenButton: some View {
+        Button(action: model.togglePreview) {
+            HStack(spacing: 10) {
+                Image(systemName: model.isPreviewing ? "stop.fill" : "speaker.wave.2.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                Text(model.isPreviewing ? "STOP" : "LISTEN").font(Theme.display(17)).tracking(2)
+            }
+            .frame(maxWidth: .infinity).frame(height: 48)
+            .foregroundStyle(Theme.frost)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.08)))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.white.opacity(0.16), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private var speedSelector: some View {
