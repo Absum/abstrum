@@ -22,6 +22,14 @@ final class CourseTests: XCTestCase {
         XCTAssertNotNil(LessonLibrary.chordF.steps.first?.chord?.barre)   // F is a barre shape
     }
 
+    func testTier4ScaleContent() {
+        XCTAssertFalse(CourseLibrary.leadBasics.comingSoon)
+        XCTAssertEqual(CourseLibrary.leadBasics.lessons.count, 3)
+        let scale = LessonLibrary.minorPentatonic
+        XCTAssertEqual(scale.steps.first?.note, "A")
+        XCTAssertTrue(scale.steps.allSatisfy { $0.chord == nil && $0.strum == nil })  // pure note steps
+    }
+
     func testFullSixTierMap() {
         // Tiers 0 through 5 are all represented on the map.
         let tiers = Set(CourseLibrary.all.map { $0.tier })

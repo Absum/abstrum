@@ -173,11 +173,30 @@ enum LessonLibrary {
         id: "faster-strum", title: "Faster Strumming", subtitle: "Pick up the pace, keep it even",
         tier: 3, prerequisite: "palm-mute", steps: strumSteps([("A", 100, 8)]))
 
+    // MARK: - Tier 4 — lead basics (single-note scales & riffs)
+
+    static let minorPentatonic = Lesson(
+        id: "pentatonic-am", title: "A Minor Pentatonic", subtitle: "Your first scale — one octave",
+        tier: 4, prerequisite: "faster-strum",
+        steps: noteSteps([(1, 0), (1, 3), (2, 0), (2, 2), (3, 0), (3, 2)]))
+
+    static let pentatonicRun = Lesson(
+        id: "pentatonic-run", title: "Pentatonic Run", subtitle: "Up and back down",
+        tier: 4, prerequisite: "pentatonic-am",
+        steps: noteSteps([(1, 0), (1, 3), (2, 0), (2, 2), (3, 0), (3, 2),
+                          (3, 0), (2, 2), (2, 0), (1, 3), (1, 0)]))
+
+    static let firstLick = Lesson(
+        id: "first-lick", title: "First Lick", subtitle: "A simple pentatonic lead line",
+        tier: 4, prerequisite: "pentatonic-run",
+        steps: noteSteps([(3, 0), (3, 2), (3, 0), (2, 2), (2, 0), (1, 3), (1, 0)]))
+
     static let all: [Lesson] = [openStrings, stringSwitching, lowToHigh, lowENotes, aStringNotes,
                                 chordA, chordE, chordD, chordG, chordC,
                                 changeEA, changeAD, changeGC,
                                 strumDown, strumKeep, firstSong,
-                                chordF, chordBm, changeFC, palmMute, fasterStrum]
+                                chordF, chordBm, changeFC, palmMute, fasterStrum,
+                                minorPentatonic, pentatonicRun, firstLick]
 
     // MARK: - Step builders
 
@@ -188,6 +207,21 @@ enum LessonLibrary {
         ids.compactMap(chord).enumerated().map { index, chord in
             LessonStep(id: index, note: chord.name, octaveLabel: "", frequency: 0,
                        hint: "Strum the \(chord.name) chord", position: nil, chord: chord)
+        }
+    }
+
+    /// Single-note steps across strings: (string, fret) → pitch target.
+    private static func noteSteps(_ positions: [(Int, Int)]) -> [LessonStep] {
+        positions.enumerated().map { index, pos in
+            let open = GuitarTuning.standard[pos.0]
+            let frequency = open.frequency * pow(2.0, Double(pos.1) / 12.0)
+            let reading = NoteMath.reading(forFrequency: frequency)
+            let hint = pos.1 == 0
+                ? "\(stringNames[pos.0]) string — open"
+                : "\(ordinal(pos.1)) fret · \(stringNames[pos.0]) string"
+            return LessonStep(id: index, note: reading?.name ?? "?",
+                              octaveLabel: reading?.displayName ?? "", frequency: frequency,
+                              hint: hint, position: FretPosition(string: pos.0, fret: pos.1))
         }
     }
 
@@ -279,8 +313,8 @@ enum CourseLibrary {
 
     static let leadBasics = Course(
         id: "lead-basics", title: "Lead Basics",
-        subtitle: "Tier 4 · Pentatonics, riffs, bends", tier: 4,
-        lessons: [], comingSoon: true)
+        subtitle: "Tier 4 · Pentatonic scales & riffs", tier: 4,
+        lessons: [LessonLibrary.minorPentatonic, LessonLibrary.pentatonicRun, LessonLibrary.firstLick])
 
     static let intermediate = Course(
         id: "intermediate", title: "Intermediate",
