@@ -151,10 +151,33 @@ enum LessonLibrary {
         tier: 2, prerequisite: "strum-keep",
         steps: strumSteps([("Em", 80, 4), ("C", 80, 4), ("G", 80, 4), ("D", 80, 4)]))
 
+    // MARK: - Tier 3 — barre chords & rhythm
+
+    static let chordF = Lesson(
+        id: "chord-f", title: "The F Chord", subtitle: "Your first barre — index across all six",
+        tier: 3, prerequisite: "first-song", steps: chordSteps(["F", "F", "F"]))
+
+    static let chordBm = Lesson(
+        id: "chord-bm", title: "The B Minor Chord", subtitle: "An A-shape barre",
+        tier: 3, prerequisite: "chord-f", steps: chordSteps(["Bm", "Bm", "Bm"]))
+
+    static let changeFC = Lesson(
+        id: "change-fc", title: "F ↔ C", subtitle: "Barre to open and back",
+        tier: 3, prerequisite: "chord-bm", steps: chordSteps(["F", "C", "F", "C"]))
+
+    static let palmMute = Lesson(
+        id: "palm-mute", title: "Palm Muting", subtitle: "Rest your palm on the strings, strum in time",
+        tier: 3, prerequisite: "change-fc", steps: strumSteps([("E", 80, 8)]))
+
+    static let fasterStrum = Lesson(
+        id: "faster-strum", title: "Faster Strumming", subtitle: "Pick up the pace, keep it even",
+        tier: 3, prerequisite: "palm-mute", steps: strumSteps([("A", 100, 8)]))
+
     static let all: [Lesson] = [openStrings, stringSwitching, lowToHigh, lowENotes, aStringNotes,
                                 chordA, chordE, chordD, chordG, chordC,
                                 changeEA, changeAD, changeGC,
-                                strumDown, strumKeep, firstSong]
+                                strumDown, strumKeep, firstSong,
+                                chordF, chordBm, changeFC, palmMute, fasterStrum]
 
     // MARK: - Step builders
 
@@ -250,8 +273,9 @@ enum CourseLibrary {
 
     static let barreRhythm = Course(
         id: "barre-rhythm", title: "Barre & Rhythm",
-        subtitle: "Tier 3 · Barre chords, palm muting, 16ths", tier: 3,
-        lessons: [], comingSoon: true)
+        subtitle: "Tier 3 · Barre chords, palm muting", tier: 3,
+        lessons: [LessonLibrary.chordF, LessonLibrary.chordBm, LessonLibrary.changeFC,
+                  LessonLibrary.palmMute, LessonLibrary.fasterStrum])
 
     static let leadBasics = Course(
         id: "lead-basics", title: "Lead Basics",

@@ -16,6 +16,12 @@ final class CourseTests: XCTestCase {
         XCTAssertEqual(CourseLibrary.strumming.lessons.count, 3)
     }
 
+    func testTier3BarreContent() {
+        XCTAssertFalse(CourseLibrary.barreRhythm.comingSoon)
+        XCTAssertEqual(CourseLibrary.barreRhythm.lessons.count, 5)
+        XCTAssertNotNil(LessonLibrary.chordF.steps.first?.chord?.barre)   // F is a barre shape
+    }
+
     func testFullSixTierMap() {
         // Tiers 0 through 5 are all represented on the map.
         let tiers = Set(CourseLibrary.all.map { $0.tier })
