@@ -167,7 +167,7 @@ struct LearnHomeView: View {
     private func courseCard(_ course: Course, unlocked: Bool) -> some View {
         let done = CourseLibrary.completedCount(course, completed: store.completedLessonIDs)
         let total = course.lessons.count
-        let allDone = done == total
+        let allDone = total > 0 && done == total
         let icon = !unlocked ? "lock.fill" : (allDone ? "checkmark.seal.fill" : "graduationcap.fill")
 
         return HStack(spacing: 16) {
@@ -183,7 +183,11 @@ struct LearnHomeView: View {
                     .foregroundStyle(unlocked ? .white : Theme.frost.opacity(0.5))
                 Text(course.subtitle).font(Theme.body(14))
                     .foregroundStyle(Theme.frost.opacity(unlocked ? 0.7 : 0.45))
-                if unlocked {
+                if course.comingSoon {
+                    Text("COMING SOON")
+                        .font(Theme.light(12)).tracking(2)
+                        .foregroundStyle(Theme.frost.opacity(0.45))
+                } else if unlocked {
                     Text("\(done) / \(total) lessons")
                         .font(Theme.light(12)).tracking(2)
                         .foregroundStyle(allDone ? Theme.teal.opacity(0.9) : Theme.frost.opacity(0.55))

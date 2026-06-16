@@ -8,12 +8,23 @@ import XCTest
 final class CourseTests: XCTestCase {
 
     func testCoursesExist() {
-        XCTAssertEqual(CourseLibrary.all.count, 5)
+        XCTAssertEqual(CourseLibrary.all.count, 8)   // 5 playable + 3 coming-soon (tiers 3–5)
         XCTAssertEqual(CourseLibrary.firstContact.lessons.count, 3)
         XCTAssertEqual(CourseLibrary.firstNotes.lessons.count, 2)
         XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 5)
         XCTAssertEqual(CourseLibrary.chordChanges.lessons.count, 3)
         XCTAssertEqual(CourseLibrary.strumming.lessons.count, 3)
+    }
+
+    func testFullSixTierMap() {
+        // Tiers 0 through 5 are all represented on the map.
+        let tiers = Set(CourseLibrary.all.map { $0.tier })
+        XCTAssertEqual(tiers, [0, 1, 2, 3, 4, 5])
+        // Tiers 3–5 are coming-soon placeholders: locked, no lessons.
+        for course in CourseLibrary.all where course.comingSoon {
+            XCTAssertTrue(course.lessons.isEmpty)
+            XCTAssertFalse(CourseLibrary.isUnlocked(course, completed: ["low-to-high"]))
+        }
     }
 
     func testStrumLessonsAreTimed() {

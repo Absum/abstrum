@@ -47,6 +47,8 @@ struct Course: Identifiable, Hashable {
     let subtitle: String
     let tier: Int
     let lessons: [Lesson]
+    /// A future tier on the map with no lessons authored yet (shown locked).
+    var comingSoon: Bool = false
 }
 
 /// How close the played pitch is to the step's target.
@@ -244,9 +246,29 @@ enum CourseLibrary {
         subtitle: "Tier 2 · Play in time", tier: 2,
         lessons: [LessonLibrary.strumDown, LessonLibrary.strumKeep, LessonLibrary.firstSong])
 
-    static let all: [Course] = [firstContact, firstNotes, firstChords, chordChanges, strumming]
+    // MARK: - Tiers 3–5 — on the map, content not authored yet
+
+    static let barreRhythm = Course(
+        id: "barre-rhythm", title: "Barre & Rhythm",
+        subtitle: "Tier 3 · Barre chords, palm muting, 16ths", tier: 3,
+        lessons: [], comingSoon: true)
+
+    static let leadBasics = Course(
+        id: "lead-basics", title: "Lead Basics",
+        subtitle: "Tier 4 · Pentatonics, riffs, bends", tier: 4,
+        lessons: [], comingSoon: true)
+
+    static let intermediate = Course(
+        id: "intermediate", title: "Intermediate",
+        subtitle: "Tier 5 · Improv, theory, ear training", tier: 5,
+        lessons: [], comingSoon: true)
+
+    /// The full skill-graph map, tier 0 → 5 (3–5 are locked placeholders).
+    static let all: [Course] = [firstContact, firstNotes, firstChords, chordChanges, strumming,
+                                barreRhythm, leadBasics, intermediate]
 
     static func isUnlocked(_ course: Course, completed: Set<String>) -> Bool {
+        guard !course.comingSoon else { return false }
         guard let first = course.lessons.first else { return true }
         return LessonLibrary.isUnlocked(first, completed: completed)
     }
