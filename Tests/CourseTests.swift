@@ -65,6 +65,15 @@ final class CourseTests: XCTestCase {
         XCTAssertEqual(LessonLibrary.chordE.prerequisite, "song-em-am")
     }
 
+    func testMultiplePrerequisites() {
+        // The Four-Chord Song is a DAG node: needs its chords mastered, not just the spine.
+        let song = LessonLibrary.firstSong
+        XCTAssertFalse(song.prerequisites.isEmpty)
+        let missingD = Set(["strum-keep", "chord-c", "chord-g"])
+        XCTAssertFalse(LessonLibrary.isUnlocked(song, completed: missingD))
+        XCTAssertTrue(LessonLibrary.isUnlocked(song, completed: missingD.union(["chord-d"])))
+    }
+
     func testChordsUnlockRightAfterOpenStrings() {
         // Chords no longer depend on the single-note fretting lessons.
         XCTAssertFalse(CourseLibrary.isUnlocked(CourseLibrary.firstChords, completed: []))

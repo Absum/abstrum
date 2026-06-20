@@ -37,7 +37,10 @@ struct Lesson: Identifiable, Hashable {
     let title: String
     let subtitle: String
     let tier: Int
-    let prerequisite: String?  // lesson id that must be completed first
+    let prerequisite: String?       // the spine edge (id that must be mastered first)
+    /// Extra prerequisites — all must be mastered too. Lets the path be a graph
+    /// (e.g. a song that needs several specific chords), not a single chain.
+    var prerequisites: [String] = []
     let steps: [LessonStep]
 }
 
@@ -67,10 +70,11 @@ enum LessonLibrary {
         return .off
     }
 
-    /// A lesson is unlocked if it has no prerequisite or the prerequisite is done.
+    /// A lesson is unlocked when its spine prerequisite AND all extra
+    /// prerequisites have been mastered (a DAG, not just a chain).
     static func isUnlocked(_ lesson: Lesson, completed: Set<String>) -> Bool {
-        guard let prerequisite = lesson.prerequisite else { return true }
-        return completed.contains(prerequisite)
+        if let prerequisite = lesson.prerequisite, !completed.contains(prerequisite) { return false }
+        return lesson.prerequisites.allSatisfy { completed.contains($0) }
     }
 
     // MARK: - Lessons (a single prerequisite chain spanning the courses)
@@ -167,6 +171,7 @@ enum LessonLibrary {
     static let firstSong = Lesson(
         id: "first-song", title: "Four-Chord Song", subtitle: "Em–C–G–D strummed in time",
         tier: 2, prerequisite: "strum-keep",
+        prerequisites: ["chord-c", "chord-g", "chord-d"],   // needs the actual chords
         steps: strumSteps([("Em", 80, 4), ("C", 80, 4), ("G", 80, 4), ("D", 80, 4)]))
 
     // MARK: - Tier 3 — barre chords & rhythm
