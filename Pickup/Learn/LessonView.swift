@@ -248,16 +248,37 @@ struct LessonView: View {
 
     // MARK: - Completion
 
+    private var masteryReadout: some View {
+        VStack(spacing: 8) {
+            Text("THIS RUN  ·  \(Int(model.lastRunScore * 100))% CLEAN")
+                .font(Theme.title(14)).tracking(2).foregroundStyle(Theme.frost.opacity(0.8))
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.10))
+                    Capsule().fill(model.isMastered ? Theme.teal : Theme.cyan)
+                        .frame(width: geo.size.width * CGFloat(min(1, max(0, model.mastery))))
+                }
+            }
+            .frame(height: 8)
+            Text(model.isMastered
+                 ? "Mastery \(Int(model.mastery * 100))% — learned!"
+                 : "Mastery \(Int(model.mastery * 100))% — practice again to master it")
+                .font(Theme.light(12)).tracking(1).foregroundStyle(Theme.frost.opacity(0.6))
+        }
+    }
+
     private var completionView: some View {
-        VStack(spacing: 22) {
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 92))
-                .foregroundStyle(Theme.teal)
-                .shadow(color: Theme.teal.opacity(0.7), radius: 26)
-            Text("LESSON COMPLETE")
+        VStack(spacing: 20) {
+            Image(systemName: model.isMastered ? "checkmark.seal.fill" : "chart.line.uptrend.xyaxis")
+                .font(.system(size: 84))
+                .foregroundStyle(model.isMastered ? Theme.teal : Theme.cyan)
+                .shadow(color: model.isMastered ? Theme.teal.opacity(0.7) : .clear, radius: 26)
+            Text(model.isMastered ? "MASTERED" : "NICE RUN")
                 .font(Theme.display(30)).tracking(4).foregroundStyle(.white)
             Text(model.lesson.title)
                 .font(Theme.body(18)).foregroundStyle(Theme.frost.opacity(0.8))
+
+            masteryReadout.padding(.horizontal, 40).padding(.top, 4)
 
             VStack(spacing: 12) {
                 Button {

@@ -14,6 +14,16 @@ final class ProgressStore {
     static let shared = ProgressStore()
 
     private(set) var completedLessonIDs: Set<String> = []
+    /// Per-lesson mastery 0…1, accumulated from run quality. A lesson counts as
+    /// learned (and unlocks the next) only at `masteryThreshold`.
+    private(set) var mastery: [String: Double] = [:]
+
+    /// Mastery needed to consider a lesson learned; the EMA needs several clean
+    /// runs to cross it, so progression reflects skill, not a single pass.
+    static let masteryThreshold = 0.8
+    private static let masteryAlpha = 0.4
+
+    func mastery(of lessonID: String) -> Double { mastery[lessonID] ?? 0 }
 
     // Habit-loop stats.
     private(set) var xp: Int = 0
@@ -57,10 +67,27 @@ final class ProgressStore {
         completedLessonIDs.contains(lessonID)
     }
 
+    /// Mark a lesson learned outright (e.g. onboarding "I know this" skip-ahead).
     func markCompleted(_ lessonID: String) {
         let isNew = !completedLessonIDs.contains(lessonID)
         completedLessonIDs.insert(lessonID)
+        mastery[lessonID] = 1.0
         if isNew { xp += 25 }          // reward only the first completion
+        registerActivity()
+        save()
+    }
+
+    /// Record one lesson run's quality (0…1). Mastery is an EMA toward the run
+    /// score; a lesson is marked learned (unlocking the next) once it crosses
+    /// the threshold — so it takes several clean runs, ideally across sessions.
+    func recordRun(_ lessonID: String, score: Double) {
+        let s = max(0, min(1, score))
+        let updated = (mastery[lessonID] ?? 0) * (1 - Self.masteryAlpha) + s * Self.masteryAlpha
+        mastery[lessonID] = updated
+        if updated >= Self.masteryThreshold && !completedLessonIDs.contains(lessonID) {
+            completedLessonIDs.insert(lessonID)
+            xp += 25
+        }
         registerActivity()
         save()
     }
@@ -120,6 +147,7 @@ final class ProgressStore {
 
     func reset() {
         completedLessonIDs = []
+        mastery = [:]
         xp = 0; practiceSeconds = 0; currentStreak = 0; bestStreak = 0
         lastActiveDay = nil; activeDays = []
         save()
@@ -141,6 +169,7 @@ final class ProgressStore {
 
     private struct Snapshot: Codable {
         var completedLessonIDs: [String]
+        var mastery: [String: Double]?
         var xp: Int?
         var practiceSeconds: Int?
         var currentStreak: Int?
@@ -153,6 +182,9 @@ final class ProgressStore {
         guard let data = try? Data(contentsOf: fileURL),
               let s = try? JSONDecoder().decode(Snapshot.self, from: data) else { return }
         completedLessonIDs = Set(s.completedLessonIDs)
+        mastery = s.mastery ?? [:]
+        // Migration: pre-mastery completions count as fully mastered.
+        for id in completedLessonIDs where mastery[id] == nil { mastery[id] = 1.0 }
         xp = s.xp ?? 0
         practiceSeconds = s.practiceSeconds ?? 0
         currentStreak = s.currentStreak ?? 0
@@ -163,6 +195,7 @@ final class ProgressStore {
 
     private func save() {
         let snapshot = Snapshot(completedLessonIDs: Array(completedLessonIDs),
+                                mastery: mastery,
                                 xp: xp, practiceSeconds: practiceSeconds,
                                 currentStreak: currentStreak, bestStreak: bestStreak,
                                 lastActiveDay: lastActiveDay, activeDays: Array(activeDays))

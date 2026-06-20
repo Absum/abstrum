@@ -19,6 +19,8 @@ final class LessonViewModel {
     var feedback: Feedback = .waiting
     var detectedLabel: String?
     var permissionDenied = false
+    /// Quality (0…1) of the just-finished run, for the completion screen.
+    var lastRunScore: Double = 0
 
     // Strum-step state (timed metronome exercise).
     var strumBeat = 0          // current beat (negative during count-in)
@@ -37,6 +39,9 @@ final class LessonViewModel {
     private let countInBeats = 4
     private var holdFrames = 0
     private let holdRequired = 4        // ~0.3–0.4s of the right note before it counts
+    private var stepMisses = 0          // times the current step's hold was dropped
+    private var runQualitySum = 0.0     // accumulated per-step quality this run
+    private var runStepCount = 0
     // Chord threshold/hold, note tolerance and timing window read live from
     // AudioSettings so the dev tuning panel applies without restarting.
 
@@ -68,6 +73,10 @@ final class LessonViewModel {
 
     var currentStep: LessonStep { lesson.steps[min(currentIndex, lesson.steps.count - 1)] }
     var progress: Double { Double(completedSteps.count) / Double(lesson.steps.count) }
+
+    /// Accumulated mastery of this lesson (0…1) and whether it's crossed the bar.
+    var mastery: Double { store.mastery(of: lesson.id) }
+    var isMastered: Bool { mastery >= ProgressStore.masteryThreshold }
 
     func startListening() {
         AVAudioApplication.requestRecordPermission { [weak self] granted in
@@ -161,7 +170,7 @@ final class LessonViewModel {
         isComplete = false
         feedback = .waiting
         detectedLabel = nil
-        holdFrames = 0
+        holdFrames = 0; stepMisses = 0; runQualitySum = 0; runStepCount = 0
         strumRunning = false; strumFinished = false; strumHits = 0; strumBeat = 0; hitBeats = []
     }
 
@@ -180,8 +189,10 @@ final class LessonViewModel {
                 self.holdFrames += 1
                 if self.holdFrames >= AudioSettings.shared.chordHoldFrames { self.completeStep() }
             } else if value >= threshold - 0.12 {
+                if self.holdFrames > 0 { self.stepMisses += 1 }
                 self.feedback = .close; self.holdFrames = 0
             } else {
+                if self.holdFrames > 0 { self.stepMisses += 1 }
                 self.feedback = .waiting; self.holdFrames = 0
             }
         }
@@ -201,15 +212,27 @@ final class LessonViewModel {
             holdFrames += 1
             if holdFrames >= holdRequired { completeStep() }
         case .close:
+            if holdFrames > 0 { stepMisses += 1 }   // had it, lost it
             feedback = .close; holdFrames = 0
         case .off:
+            if holdFrames > 0 { stepMisses += 1 }
             feedback = .waiting; holdFrames = 0
         }
     }
 
     private func completeStep() {
+        // Score this step's quality before clearing per-step state.
+        let quality: Double
+        if let pattern = currentStep.strum {
+            quality = min(1, Double(strumHits) / Double(max(1, pattern.beats)))   // beats hit in time
+        } else {
+            quality = stepMisses == 0 ? 1.0 : 1.0 / Double(1 + stepMisses)        // steady-hold cleanliness
+        }
+        runQualitySum += quality
+        runStepCount += 1
+
         completedSteps.insert(currentStep.id)
-        holdFrames = 0
+        holdFrames = 0; stepMisses = 0
         feedback = .waiting
         detectedLabel = nil
         strumFinished = false; strumBeat = 0; strumHits = 0; hitBeats = []
@@ -217,7 +240,8 @@ final class LessonViewModel {
             currentIndex += 1
         } else {
             isComplete = true
-            store.markCompleted(lesson.id)
+            lastRunScore = runStepCount > 0 ? runQualitySum / Double(runStepCount) : 1
+            store.recordRun(lesson.id, score: lastRunScore)   // mastery EMA; unlocks at threshold
             audio.stop()
         }
     }

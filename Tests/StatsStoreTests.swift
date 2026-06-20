@@ -82,6 +82,32 @@ final class StatsStoreTests: XCTestCase {
         XCTAssertEqual(s.practiceSeconds, 90)
     }
 
+    func testMasteryRequiresSeveralCleanRuns() {
+        let s = makeStore()
+        // One perfect run shouldn't instantly "master" it.
+        s.recordRun("chord-a", score: 1.0)
+        XCTAssertFalse(s.isCompleted("chord-a"))
+        XCTAssertLessThan(s.mastery(of: "chord-a"), ProgressStore.masteryThreshold)
+        // Repeated clean runs cross the threshold and unlock it.
+        for _ in 0..<5 { s.recordRun("chord-a", score: 1.0) }
+        XCTAssertGreaterThanOrEqual(s.mastery(of: "chord-a"), ProgressStore.masteryThreshold)
+        XCTAssertTrue(s.isCompleted("chord-a"))
+    }
+
+    func testSloppyRunsNeverMaster() {
+        let s = makeStore()
+        for _ in 0..<20 { s.recordRun("chord-e", score: 0.5) }   // EMA converges to 0.5
+        XCTAssertFalse(s.isCompleted("chord-e"))
+        XCTAssertLessThan(s.mastery(of: "chord-e"), ProgressStore.masteryThreshold)
+    }
+
+    func testMarkCompletedSetsFullMastery() {
+        let s = makeStore()
+        s.markCompleted("chord-d")
+        XCTAssertEqual(s.mastery(of: "chord-d"), 1.0)
+        XCTAssertTrue(s.isCompleted("chord-d"))
+    }
+
     func testPersistenceRoundTrip() {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("pickup-stats-\(UUID().uuidString)")
