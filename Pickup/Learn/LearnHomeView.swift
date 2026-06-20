@@ -144,27 +144,39 @@ struct LearnHomeView: View {
     }
 
     private func todaysPracticeCard(steps: Int) -> some View {
-        Button { showSession = true } label: {
+        // Near-black ink for text/icon — far higher contrast on teal than the
+        // old translucent navy, while the icon tile matches the other cards' shape.
+        let ink = Color(hex: 0x042521)
+        return Button { showSession = true } label: {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 14) {
-                    Image(systemName: "figure.strengthtraining.traditional")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(Color(hex: 0x06222A))
-                        .frame(width: 52, height: 52)
-                        .background(Circle().fill(.white.opacity(0.92)))
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Today's Practice").font(Theme.display(24)).foregroundStyle(Color(hex: 0x06222A))
+                HStack(spacing: 16) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(ink).frame(width: 56, height: 56)
+                        Image(systemName: "figure.strengthtraining.traditional")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundStyle(Theme.teal)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Today's Practice").font(Theme.display(24)).foregroundStyle(ink)
                         Text("\(steps) steps · ~\(max(5, steps * 2)) min, guided")
-                            .font(Theme.body(14)).foregroundStyle(Color(hex: 0x06222A).opacity(0.75))
+                            .font(Theme.body(15)).foregroundStyle(ink.opacity(0.9))
                     }
                     Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(ink.opacity(0.65))
                 }
                 Text("WARM-UP · REVIEW · NEW · SONG · COOL-DOWN")
-                    .font(Theme.light(10)).tracking(2).foregroundStyle(Color(hex: 0x06222A).opacity(0.6))
+                    .font(Theme.title(11)).tracking(1.5).foregroundStyle(ink.opacity(0.8))
             }
             .padding(20)
-            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Theme.teal))
-            .shadow(color: Theme.teal.opacity(0.45), radius: 18, y: 7)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(LinearGradient(colors: [Theme.teal, Color(hex: 0x1FA597)],
+                                         startPoint: .top, endPoint: .bottom))
+            )
+            .shadow(color: Theme.teal.opacity(0.4), radius: 16, y: 6)
         }
         .buttonStyle(.plain)
     }
