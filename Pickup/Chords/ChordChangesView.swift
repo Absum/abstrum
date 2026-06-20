@@ -156,7 +156,7 @@ private struct ChordChangeRunner: View {
                 .contentTransition(.numericText())
                 .animation(.snappy, value: chord.id)
             FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings, barre: chord.barre)
-                .frame(width: 230, height: 150)
+                .frame(width: FretboardDiagram.practiceWidth, height: FretboardDiagram.practiceHeight)
         }
     }
 

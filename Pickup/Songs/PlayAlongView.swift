@@ -159,7 +159,7 @@ private struct PlayAlongRunner: View {
                 .animation(.snappy, value: model.current.id)
             FretboardDiagram(positions: model.current.positions,
                              mutedStrings: model.current.mutedStrings, barre: model.current.barre)
-                .frame(width: 220, height: 144)
+                .frame(width: FretboardDiagram.practiceWidth, height: FretboardDiagram.practiceHeight)
         }
     }
 

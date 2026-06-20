@@ -36,7 +36,7 @@ struct ChordPracticeView: View {
 
                 FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings,
                                  barre: chord.barre, showFingers: showFingers)
-                    .frame(width: 286, height: 232)
+                    .frame(width: FretboardDiagram.practiceWidth, height: FretboardDiagram.practiceHeight)
                     .padding(.top, 28)
 
                 if showFingers {

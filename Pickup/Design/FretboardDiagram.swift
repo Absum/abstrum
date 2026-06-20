@@ -19,6 +19,12 @@ struct FretboardDiagram: View {
 
     private let markerOutline = Color(hex: 0x0A1F27)
 
+    /// Standard chart size for screens where a single chord is the centre of
+    /// attention (lesson practice, chord practice, chord changes, play-along),
+    /// so the diagram is the same size everywhere it's the focus.
+    static let practiceWidth: CGFloat = 286
+    static let practiceHeight: CGFloat = 232
+
     var body: some View {
         Canvas { ctx, size in
             let cols = 6

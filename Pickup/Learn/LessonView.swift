@@ -96,7 +96,7 @@ struct LessonView: View {
                 if showsDiagram {
                     FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings,
                                      barre: chord.barre, showFingers: showsFingerNumbers)
-                        .frame(width: 286, height: 232).padding(.top, 6)   // match the chord-practice screen
+                        .frame(width: FretboardDiagram.practiceWidth, height: FretboardDiagram.practiceHeight).padding(.top, 6)   // match the chord-practice screen
                 } else {
                     fromMemoryBadge.frame(width: 286, height: 232).padding(.top, 6)
                 }
