@@ -66,10 +66,10 @@ struct LessonView: View {
                     .foregroundStyle(model.feedback == .correct ? Theme.teal : .white)
                 FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings,
                                  barre: chord.barre, showFingers: true)
-                    .frame(width: 200, height: 134).padding(.top, 4)
+                    .frame(width: 286, height: 232).padding(.top, 6)   // match the chord-practice screen
             }
-            tempoPill.padding(.top, 18)
-            beatIndicator.padding(.top, 16)
+            tempoPill.padding(.top, 16)
+            beatIndicator.padding(.top, 14)
             Spacer()
             strumControl.padding(.horizontal, 30).padding(.bottom, 28)
         }
