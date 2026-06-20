@@ -53,6 +53,7 @@ struct ContentView: View {
                 .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
         }
         .tint(Theme.teal)
+        .preferredColorScheme(.dark)   // the whole shell is dark; keep the tab bar dark too
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView {
                 didOnboarding = true
