@@ -10,8 +10,21 @@ enum ToneSynth {
     /// Karplus–Strong plucked-string samples for one note.
     static func pluck(frequency: Double, sampleRate: Double, length: Int, decay: Float = 0.996) -> [Float] {
         guard frequency > 0, length > 0, sampleRate > 0 else { return [] }
-        let n = max(2, Int((sampleRate / frequency).rounded()))
-        var ring = (0..<n).map { _ in Float.random(in: -1...1) }
+        // The 2-tap averaging loop filter adds ~half a sample of delay, so size
+        // the delay line for (period − 0.5) to keep the note in tune rather than
+        // consistently flat.
+        let n = max(2, Int((sampleRate / frequency - 0.5).rounded()))
+
+        // Deterministic excitation seeded by the pitch: every "hear it" of the
+        // same note produces an identical burst, so the pitch/timbre doesn't
+        // wobble between repeats (a random burst made short delay lines — high
+        // notes — sound like they drifted each play).
+        var state = UInt64(bitPattern: Int64((frequency * 1000).rounded())) ^ 0x9E3779B97F4A7C15
+        func noise() -> Float {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            return Float(Int32(truncatingIfNeeded: state >> 32)) / Float(Int32.max)   // ≈ [-1, 1]
+        }
+        var ring = (0..<n).map { _ in noise() }
         // Low-pass the excitation burst so the attack isn't a harsh broadband click.
         let raw = ring
         for i in 0..<n { ring[i] = 0.5 * (raw[i] + raw[(i + 1) % n]) }
