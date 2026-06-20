@@ -81,6 +81,24 @@ final class ProgressStore {
         reviews[lessonID] = ReviewState(stage: clamped, dueDate: due, lastReviewed: date)
     }
 
+    // MARK: - Adaptive tempo
+
+    /// Per-skill practice tempo as a factor of the lesson's target BPM. Starts
+    /// below target and ramps up only as the learner plays cleanly (see
+    /// `AdaptiveTempo`). Absent → the default start factor.
+    private(set) var practiceTempo: [String: Double] = [:]
+
+    func tempoFactor(of lessonID: String) -> Double {
+        practiceTempo[lessonID] ?? AdaptiveTempo.startFactor
+    }
+
+    /// Fold a timed run's quality into the skill's practice tempo: clean runs
+    /// speed it up toward target, shaky runs slow it back down.
+    func recordTempoResult(_ lessonID: String, score: Double) {
+        practiceTempo[lessonID] = AdaptiveTempo.next(factor: tempoFactor(of: lessonID), score: score)
+        save()
+    }
+
     // Habit-loop stats.
     private(set) var xp: Int = 0
     private(set) var practiceSeconds: Int = 0
@@ -214,6 +232,7 @@ final class ProgressStore {
         completedLessonIDs = []
         mastery = [:]
         reviews = [:]
+        practiceTempo = [:]
         xp = 0; practiceSeconds = 0; currentStreak = 0; bestStreak = 0
         lastActiveDay = nil; activeDays = []
         save()
@@ -237,6 +256,7 @@ final class ProgressStore {
         var completedLessonIDs: [String]
         var mastery: [String: Double]?
         var reviews: [String: ReviewState]?
+        var practiceTempo: [String: Double]?
         var xp: Int?
         var practiceSeconds: Int?
         var currentStreak: Int?
@@ -253,6 +273,7 @@ final class ProgressStore {
         // Migration: pre-mastery completions count as fully mastered.
         for id in completedLessonIDs where mastery[id] == nil { mastery[id] = 1.0 }
         reviews = s.reviews ?? [:]
+        practiceTempo = s.practiceTempo ?? [:]
         xp = s.xp ?? 0
         practiceSeconds = s.practiceSeconds ?? 0
         currentStreak = s.currentStreak ?? 0
@@ -265,6 +286,7 @@ final class ProgressStore {
         let snapshot = Snapshot(completedLessonIDs: Array(completedLessonIDs),
                                 mastery: mastery,
                                 reviews: reviews,
+                                practiceTempo: practiceTempo,
                                 xp: xp, practiceSeconds: practiceSeconds,
                                 currentStreak: currentStreak, bestStreak: bestStreak,
                                 lastActiveDay: lastActiveDay, activeDays: Array(activeDays))

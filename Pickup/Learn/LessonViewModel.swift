@@ -74,6 +74,17 @@ final class LessonViewModel {
     var currentStep: LessonStep { lesson.steps[min(currentIndex, lesson.steps.count - 1)] }
     var progress: Double { Double(completedSteps.count) / Double(lesson.steps.count) }
 
+    /// Adaptive practice tempo for the current strum step: the lesson's target
+    /// BPM scaled by the skill's accuracy-earned factor (accuracy before speed).
+    var currentBpm: Int {
+        guard let pattern = currentStep.strum else { return 0 }
+        return AdaptiveTempo.bpm(target: pattern.bpm, factor: store.tempoFactor(of: lesson.id))
+    }
+    /// The "graduation" tempo this exercise is ramping toward.
+    var targetBpm: Int { currentStep.strum?.bpm ?? 0 }
+    /// Whether the skill has reached its target tempo.
+    var isAtTargetTempo: Bool { AdaptiveTempo.isAtTarget(store.tempoFactor(of: lesson.id)) }
+
     /// Accumulated mastery of this lesson (0…1) and whether it's crossed the bar.
     var mastery: Double { store.mastery(of: lesson.id) }
     var isMastered: Bool { mastery >= ProgressStore.masteryThreshold }
@@ -98,9 +109,9 @@ final class LessonViewModel {
 
     /// Start the metronome + count-in for the current strum step.
     func beginStrum() {
-        guard let pattern = currentStep.strum, !strumRunning else { return }
+        guard currentStep.strum != nil, !strumRunning else { return }
         hitBeats = []; strumHits = 0; strumFinished = false
-        let beatInterval = 60.0 / Double(pattern.bpm)
+        let beatInterval = 60.0 / Double(currentBpm)
         strumTime = -Double(countInBeats) * beatInterval   // count-in before beat 0
         strumBeat = Int(floor(strumTime / beatInterval))
         lastTick = nil
@@ -119,7 +130,7 @@ final class LessonViewModel {
         guard let last = lastTick else { lastTick = now; return }
         strumTime += now.timeIntervalSince(last); lastTick = now
 
-        let beatInterval = 60.0 / Double(pattern.bpm)
+        let beatInterval = 60.0 / Double(currentBpm)
         let beat = Int(floor(strumTime / beatInterval))
         if beat != strumBeat {
             strumBeat = beat
@@ -133,7 +144,7 @@ final class LessonViewModel {
     /// A detected onset: credit the nearest beat if it's close enough.
     private func registerStrum() {
         guard strumRunning, let pattern = currentStep.strum, strumTime >= -0.15 else { return }
-        let beatInterval = 60.0 / Double(pattern.bpm)
+        let beatInterval = 60.0 / Double(currentBpm)
         let nearest = Int((strumTime / beatInterval).rounded())
         guard nearest >= 0, nearest < pattern.beats, !hitBeats.contains(nearest) else { return }
         if abs(strumTime - Double(nearest) * beatInterval) <= AudioSettings.shared.timingWindow {
@@ -242,6 +253,10 @@ final class LessonViewModel {
             isComplete = true
             lastRunScore = runStepCount > 0 ? runQualitySum / Double(runStepCount) : 1
             store.recordRun(lesson.id, score: lastRunScore)   // mastery EMA; unlocks at threshold
+            if lesson.steps.contains(where: { $0.strum != nil }) {
+                // Accuracy before speed: a clean timed run earns a faster tempo next time.
+                store.recordTempoResult(lesson.id, score: lastRunScore)
+            }
             audio.stop()
         }
     }

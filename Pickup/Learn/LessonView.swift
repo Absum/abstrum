@@ -68,10 +68,28 @@ struct LessonView: View {
                                  barre: chord.barre, showFingers: true)
                     .frame(width: 200, height: 134).padding(.top, 4)
             }
-            beatIndicator.padding(.top, 24)
+            tempoPill.padding(.top, 18)
+            beatIndicator.padding(.top, 16)
             Spacer()
             strumControl.padding(.horizontal, 30).padding(.bottom, 28)
         }
+    }
+
+    private var tempoPill: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "metronome.fill").font(.system(size: 13))
+            Text("\(model.currentBpm) BPM").font(Theme.title(15)).tracking(1)
+            if model.isAtTargetTempo {
+                Text("· FULL SPEED").font(Theme.light(11)).tracking(1).foregroundStyle(Theme.teal)
+            } else {
+                Text("· BUILDING UP").font(Theme.light(11)).tracking(1).foregroundStyle(Theme.frost.opacity(0.5))
+            }
+        }
+        .foregroundStyle(Theme.frost.opacity(0.85))
+        .padding(.horizontal, 16).frame(height: 36)
+        .background(Capsule().fill(.white.opacity(0.06)))
+        .overlay(Capsule().stroke(.white.opacity(0.12), lineWidth: 1))
+        .animation(.snappy, value: model.currentBpm)
     }
 
     private var beatIndicator: some View {
