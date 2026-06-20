@@ -66,6 +66,7 @@ targets:
       - path: Pickup/Core/GuitarTuning.swift
       - path: Pickup/Learn/Lesson.swift
       - path: Pickup/Learn/ProgressStore.swift
+      - path: Pickup/Learn/DailySession.swift
       - path: Pickup/Learn/ReminderScheduler.swift
       - path: Pickup/Chords/Chord.swift
       - path: Pickup/Chords/ChordProgression.swift

@@ -12,6 +12,7 @@ struct LearnHomeView: View {
     @State private var showHighway = false
     @State private var showStats = false
     @State private var showReview = false
+    @State private var showSession = false
     private let store = ProgressStore.shared
 
     var body: some View {
@@ -23,6 +24,8 @@ struct LearnHomeView: View {
                     statsStrip.padding(.horizontal, 22).padding(.top, 14)
                     ScrollView {
                         VStack(spacing: 16) {
+                            let session = DailySession.today(store)
+                            if session.count > 1 { todaysPracticeCard(steps: session.count) }
                             let dueCount = store.dueForReview().count
                             if dueCount > 0 { dueReviewCard(count: dueCount) }
                             playAlongCard
@@ -50,6 +53,9 @@ struct LearnHomeView: View {
         .fullScreenCover(isPresented: $showHighway) {
             TabHighwayView { showHighway = false }
         }
+        .fullScreenCover(isPresented: $showSession) {
+            DailySessionView(items: DailySession.today(store)) { showSession = false }
+        }
         .fullScreenCover(isPresented: $showReview) {
             ReviewSessionView(lessonIDs: store.dueForReview()) { showReview = false }
         }
@@ -71,6 +77,9 @@ struct LearnHomeView: View {
             }
             if ProcessInfo.processInfo.environment["PICKUP_REVIEW"] != nil {
                 showReview = true
+            }
+            if ProcessInfo.processInfo.environment["PICKUP_SESSION"] != nil {
+                showSession = true
             }
             if ProcessInfo.processInfo.environment["PICKUP_PLAYALONG"] != nil {
                 showPlayAlong = true
@@ -132,6 +141,32 @@ struct LearnHomeView: View {
 
     private var statDivider: some View {
         Rectangle().fill(.white.opacity(0.10)).frame(width: 1, height: 26)
+    }
+
+    private func todaysPracticeCard(steps: Int) -> some View {
+        Button { showSession = true } label: {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 14) {
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color(hex: 0x06222A))
+                        .frame(width: 52, height: 52)
+                        .background(Circle().fill(.white.opacity(0.92)))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Today's Practice").font(Theme.display(24)).foregroundStyle(Color(hex: 0x06222A))
+                        Text("\(steps) steps · ~\(max(5, steps * 2)) min, guided")
+                            .font(Theme.body(14)).foregroundStyle(Color(hex: 0x06222A).opacity(0.75))
+                    }
+                    Spacer()
+                }
+                Text("WARM-UP · REVIEW · NEW · SONG · COOL-DOWN")
+                    .font(Theme.light(10)).tracking(2).foregroundStyle(Color(hex: 0x06222A).opacity(0.6))
+            }
+            .padding(20)
+            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Theme.teal))
+            .shadow(color: Theme.teal.opacity(0.45), radius: 18, y: 7)
+        }
+        .buttonStyle(.plain)
     }
 
     private func dueReviewCard(count: Int) -> some View {
