@@ -108,6 +108,79 @@ final class StatsStoreTests: XCTestCase {
         XCTAssertTrue(s.isCompleted("chord-d"))
     }
 
+    // MARK: - Spaced repetition
+
+    func testMasterySchedulesFirstReviewTomorrow() {
+        let s = makeStore()
+        let base = Date()
+        s.markCompleted("chord-em", on: base)
+        XCTAssertNotNil(s.reviewState(of: "chord-em"))
+        XCTAssertEqual(s.reviewState(of: "chord-em")?.stage, 0)
+        XCTAssertFalse(s.isDueForReview("chord-em", on: base))      // not due the same day
+        XCTAssertTrue(s.isDueForReview("chord-em", on: day(base, 1)))  // due the next day
+    }
+
+    func testCleanReviewExpandsTheInterval() {
+        let s = makeStore()
+        let base = Date()
+        s.markCompleted("chord-c", on: base)               // stage 0 → next gap 1d
+        s.recordReview("chord-c", clean: true, on: day(base, 1))   // stage 1 → next gap 3d
+        XCTAssertEqual(s.reviewState(of: "chord-c")?.stage, 1)
+        XCTAssertFalse(s.isDueForReview("chord-c", on: day(base, 3)))
+        XCTAssertTrue(s.isDueForReview("chord-c", on: day(base, 4)))   // 1 + 3 days
+    }
+
+    func testShakyReviewPullsTheIntervalBack() {
+        let s = makeStore()
+        let base = Date()
+        s.markCompleted("chord-g", on: base)
+        s.recordReview("chord-g", clean: true, on: base)   // stage 1
+        s.recordReview("chord-g", clean: true, on: base)   // stage 2
+        XCTAssertEqual(s.reviewState(of: "chord-g")?.stage, 2)
+        s.recordReview("chord-g", clean: false, on: base)  // shaky → back to stage 1
+        XCTAssertEqual(s.reviewState(of: "chord-g")?.stage, 1)
+    }
+
+    func testReviewStageStaysWithinBounds() {
+        let s = makeStore()
+        let base = Date()
+        s.markCompleted("chord-d", on: base)
+        s.recordReview("chord-d", clean: false, on: base) // never below the first gap
+        XCTAssertEqual(s.reviewState(of: "chord-d")?.stage, 0)
+        for _ in 0..<10 { s.recordReview("chord-d", clean: true, on: base) }
+        XCTAssertEqual(s.reviewState(of: "chord-d")?.stage, ProgressStore.reviewIntervals.count - 1)
+    }
+
+    func testDueForReviewOrdersMostOverdueFirst() {
+        let s = makeStore()
+        let base = Date()
+        s.markCompleted("early", on: base)                 // due day 1
+        s.markCompleted("late", on: base)
+        s.recordReview("late", clean: true, on: base)      // due day 3
+        XCTAssertEqual(s.dueForReview(on: day(base, 5)), ["early", "late"])
+        XCTAssertEqual(s.dueForReview(on: base), [])       // nothing due on the day learned
+    }
+
+    func testRunningALearnedLessonCountsAsAReview() {
+        let s = makeStore()
+        while !s.isCompleted("chord-a") { s.recordRun("chord-a", score: 1.0) }
+        XCTAssertEqual(s.reviewState(of: "chord-a")?.stage, 0)   // scheduled when first learned
+        let before = s.reviewState(of: "chord-a")!.stage
+        s.recordRun("chord-a", score: 1.0)                       // a clean run of a learned skill = a review
+        XCTAssertEqual(s.reviewState(of: "chord-a")?.stage, before + 1)
+    }
+
+    func testReviewSchedulePersists() {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pickup-stats-\(UUID().uuidString)")
+        let base = Date()
+        let a = ProgressStore(directory: dir, filename: "progress.json")
+        a.markCompleted("chord-em", on: base)
+        a.recordReview("chord-em", clean: true, on: base)        // stage 1
+        let b = ProgressStore(directory: dir, filename: "progress.json")
+        XCTAssertEqual(b.reviewState(of: "chord-em")?.stage, 1)
+    }
+
     func testPersistenceRoundTrip() {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("pickup-stats-\(UUID().uuidString)")

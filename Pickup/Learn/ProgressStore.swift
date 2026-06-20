@@ -1,9 +1,11 @@
 //
 //  ProgressStore.swift
 //  Offline-first progress, persisted as JSON in Application Support: completed
-//  lessons plus the habit-loop stats — XP/level, a daily streak, and practice
-//  time. Right-sized for the current data; migrate to SQLite/SwiftData if this
-//  grows to per-skill mastery and spaced-repetition schedules.
+//  lessons, per-skill mastery, per-skill spaced-repetition review schedules,
+//  plus the habit-loop stats — XP/level, a daily streak, and practice time.
+//  The data set stays small (a few hundred lessons × a handful of fields), so
+//  a single JSON snapshot is still right-sized; move to SQLite/SwiftData only
+//  if per-run history or analytics need to be retained.
 //
 
 import Foundation
@@ -24,6 +26,60 @@ final class ProgressStore {
     private static let masteryAlpha = 0.4
 
     func mastery(of lessonID: String) -> Double { mastery[lessonID] ?? 0 }
+
+    // MARK: - Spaced repetition
+
+    /// When each learned skill is next due for review. A clean review pushes the
+    /// due-date out along `reviewIntervals`; a shaky one pulls it back in, so
+    /// fragile skills resurface sooner. Drives the "what to practice today" list.
+    private(set) var reviews: [String: ReviewState] = [:]
+
+    /// Expanding review gaps in days (Leitner/SM-style). The last value repeats
+    /// once a skill is well-retained, so long-held skills check back ~monthly.
+    static let reviewIntervals = [1, 3, 7, 16, 35]
+
+    struct ReviewState: Codable, Equatable {
+        var stage: Int        // index into reviewIntervals
+        var dueDate: Date
+        var lastReviewed: Date
+    }
+
+    func reviewState(of lessonID: String) -> ReviewState? { reviews[lessonID] }
+
+    /// Learned skills whose review is due on/before `date` (calendar day), most
+    /// overdue first — the ordered "due for review" queue.
+    func dueForReview(on date: Date = Date()) -> [String] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: date)
+        return reviews
+            .filter { cal.startOfDay(for: $0.value.dueDate) <= today }
+            .sorted { $0.value.dueDate < $1.value.dueDate }
+            .map { $0.key }
+    }
+
+    func isDueForReview(_ lessonID: String, on date: Date = Date()) -> Bool {
+        guard let state = reviews[lessonID] else { return false }
+        let cal = Calendar.current
+        return cal.startOfDay(for: state.dueDate) <= cal.startOfDay(for: date)
+    }
+
+    /// Record a spaced review of an already-learned skill. A clean run advances
+    /// one interval; a shaky run drops back one (never below the first gap).
+    func recordReview(_ lessonID: String, clean: Bool, on date: Date = Date()) {
+        let current = reviews[lessonID]?.stage ?? 0
+        let next = clean ? current + 1 : current - 1
+        scheduleReview(lessonID, stage: next, from: date)
+        save()
+    }
+
+    /// (Re)schedule a skill's next review `reviewIntervals[stage]` days out.
+    private func scheduleReview(_ lessonID: String, stage: Int, from date: Date) {
+        let clamped = max(0, min(stage, Self.reviewIntervals.count - 1))
+        let cal = Calendar.current
+        let due = cal.date(byAdding: .day, value: Self.reviewIntervals[clamped],
+                           to: cal.startOfDay(for: date)) ?? date
+        reviews[lessonID] = ReviewState(stage: clamped, dueDate: due, lastReviewed: date)
+    }
 
     // Habit-loop stats.
     private(set) var xp: Int = 0
@@ -68,27 +124,36 @@ final class ProgressStore {
     }
 
     /// Mark a lesson learned outright (e.g. onboarding "I know this" skip-ahead).
-    func markCompleted(_ lessonID: String) {
+    func markCompleted(_ lessonID: String, on date: Date = Date()) {
         let isNew = !completedLessonIDs.contains(lessonID)
         completedLessonIDs.insert(lessonID)
         mastery[lessonID] = 1.0
-        if isNew { xp += 25 }          // reward only the first completion
-        registerActivity()
+        if isNew {
+            xp += 25                     // reward only the first completion
+            scheduleReview(lessonID, stage: 0, from: date)   // first review tomorrow
+        }
+        registerActivity(on: date)
         save()
     }
 
     /// Record one lesson run's quality (0…1). Mastery is an EMA toward the run
     /// score; a lesson is marked learned (unlocking the next) once it crosses
     /// the threshold — so it takes several clean runs, ideally across sessions.
-    func recordRun(_ lessonID: String, score: Double) {
+    /// Running an already-learned lesson counts as a spaced review.
+    func recordRun(_ lessonID: String, score: Double, on date: Date = Date()) {
         let s = max(0, min(1, score))
+        let alreadyLearned = completedLessonIDs.contains(lessonID)
         let updated = (mastery[lessonID] ?? 0) * (1 - Self.masteryAlpha) + s * Self.masteryAlpha
         mastery[lessonID] = updated
-        if updated >= Self.masteryThreshold && !completedLessonIDs.contains(lessonID) {
+        if alreadyLearned {
+            // A run of a learned skill is a review: clean runs space it out further.
+            recordReview(lessonID, clean: s >= Self.masteryThreshold, on: date)
+        } else if updated >= Self.masteryThreshold {
             completedLessonIDs.insert(lessonID)
             xp += 25
+            scheduleReview(lessonID, stage: 0, from: date)   // first review tomorrow
         }
-        registerActivity()
+        registerActivity(on: date)
         save()
     }
 
@@ -148,6 +213,7 @@ final class ProgressStore {
     func reset() {
         completedLessonIDs = []
         mastery = [:]
+        reviews = [:]
         xp = 0; practiceSeconds = 0; currentStreak = 0; bestStreak = 0
         lastActiveDay = nil; activeDays = []
         save()
@@ -170,6 +236,7 @@ final class ProgressStore {
     private struct Snapshot: Codable {
         var completedLessonIDs: [String]
         var mastery: [String: Double]?
+        var reviews: [String: ReviewState]?
         var xp: Int?
         var practiceSeconds: Int?
         var currentStreak: Int?
@@ -185,6 +252,7 @@ final class ProgressStore {
         mastery = s.mastery ?? [:]
         // Migration: pre-mastery completions count as fully mastered.
         for id in completedLessonIDs where mastery[id] == nil { mastery[id] = 1.0 }
+        reviews = s.reviews ?? [:]
         xp = s.xp ?? 0
         practiceSeconds = s.practiceSeconds ?? 0
         currentStreak = s.currentStreak ?? 0
@@ -196,6 +264,7 @@ final class ProgressStore {
     private func save() {
         let snapshot = Snapshot(completedLessonIDs: Array(completedLessonIDs),
                                 mastery: mastery,
+                                reviews: reviews,
                                 xp: xp, practiceSeconds: practiceSeconds,
                                 currentStreak: currentStreak, bestStreak: bestStreak,
                                 lastActiveDay: lastActiveDay, activeDays: Array(activeDays))
