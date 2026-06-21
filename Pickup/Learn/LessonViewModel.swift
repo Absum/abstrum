@@ -166,6 +166,17 @@ final class LessonViewModel {
         }
     }
 
+    /// Play the target once for audiation (sound-before-symbol), without opening
+    /// the mic — used by the pre-play "hear it first" primer.
+    func audiate() {
+        player.onFinished = nil
+        if let chord = currentStep.chord {
+            player.playChord(chord.frequencies)
+        } else {
+            player.playNote(currentStep.frequency)
+        }
+    }
+
     /// Play the target note as an example; pause the mic during playback.
     func playExample() {
         audio.stop()

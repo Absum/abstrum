@@ -23,15 +23,104 @@ struct LessonView: View {
     private var showsFingerNumbers: Bool { model.scaffold.showsFingerNumbers || peeking }
     private var showsHint: Bool { model.scaffold != .fromMemory }
 
+    /// Whether the user has cleared the pre-play "hear it first" primer.
+    @State private var audiated = false
+    /// Show the audiation primer only while first acquiring a skill (full
+    /// scaffold). Once it's reduced/from-memory the learner already hears it.
+    private var needsAudiation: Bool {
+        if audiationDisabled { return false }
+        return model.scaffold == .full
+    }
+
     var body: some View {
         ZStack {
             ArcticBackground(glow: inTune || model.isComplete)
-            if model.isComplete { completionView } else { practiceView }
+            if model.isComplete {
+                completionView
+            } else if needsAudiation && !audiated {
+                audiationIntro
+            } else {
+                practiceView
+            }
         }
         .preferredColorScheme(.dark)
-        .onAppear { model.startListening() }
+        .onAppear {
+            if needsAudiation && !audiated {
+                model.audiate()           // hear it first; the mic opens when they proceed
+            } else {
+                model.startListening()
+            }
+        }
         .onDisappear { model.stopListening() }
         .onChange(of: model.currentStep.id) { _, _ in peeking = false }   // re-fade each step
+    }
+
+    private func startPracticing() {
+        audiated = true
+        model.startListening()
+    }
+
+    // MARK: - Audiation primer (sound before symbol)
+
+    private var audiationTargetName: String {
+        model.currentStep.chord?.name ?? model.currentStep.note
+    }
+
+    private var audiationInstruction: String {
+        if model.currentStep.strum != nil {
+            return "Listen and feel the pulse — you'll be counted in, then strum."
+        }
+        if model.currentStep.chord != nil {
+            return "Listen, then picture the shape and hum it before you play."
+        }
+        return "Listen, then hum it back before you play."
+    }
+
+    private var audiationIntro: some View {
+        VStack(spacing: 0) {
+            topBar.padding(.top, 12)
+            Spacer()
+            VStack(spacing: 16) {
+                Text("HEAR IT FIRST").font(Theme.display(16)).tracking(4).foregroundStyle(Theme.cyan)
+                Text(audiationTargetName)
+                    .font(.custom("Rajdhani-SemiBold", size: 88))
+                    .foregroundStyle(.white)
+                Text(audiationInstruction)
+                    .font(Theme.body(16)).foregroundStyle(Theme.frost.opacity(0.8))
+                    .multilineTextAlignment(.center).padding(.horizontal, 44)
+                Button { model.audiate() } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "speaker.wave.2.fill").font(.system(size: 14, weight: .semibold))
+                        Text("HEAR AGAIN").font(Theme.display(15)).tracking(3)
+                    }
+                    .foregroundStyle(Theme.frost)
+                    .padding(.horizontal, 20).frame(height: 42)
+                    .background(Capsule().fill(.white.opacity(0.08)))
+                    .overlay(Capsule().stroke(.white.opacity(0.16), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
+            }
+            Spacer()
+            Button { startPracticing() } label: {
+                Text("I'VE GOT IT — PLAY")
+                    .font(Theme.display(18)).tracking(3)
+                    .frame(maxWidth: .infinity).frame(height: 58)
+                    .foregroundStyle(Color(hex: 0x06222A))
+                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.teal))
+                    .shadow(color: Theme.teal.opacity(0.5), radius: 16, y: 6)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 30).padding(.bottom, 28)
+        }
+    }
+
+    private var audiationDisabled: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.environment["PICKUP_NO_AUDIATION"] != nil
+        #else
+        return false
+        #endif
     }
 
     /// Shown in place of a faded prompt: a "from memory" badge with a peek escape.
