@@ -184,7 +184,7 @@ enum LessonLibrary {
         tier: 2, prerequisite: "first-song", prerequisites: ["chord-g", "chord-c", "chord-d"],
         steps: strumSteps([("G", 100, 4), ("C", 100, 4), ("D", 100, 4), ("G", 100, 4)]))
 
-    // MARK: - Tier 3 — barre chords & rhythm
+    // MARK: - Tier 3 — barre chords, power chords & rhythm
 
     static let cheaterF = Lesson(
         id: "cheater-f", title: "The Easy F", subtitle: "A 4-string F — no full barre yet",
@@ -198,22 +198,43 @@ enum LessonLibrary {
         id: "chord-bm", title: "The B Minor Chord", subtitle: "An A-shape barre",
         tier: 3, prerequisite: "chord-f", steps: chordSteps(["Bm", "Bm", "Bm"]))
 
+    // CAGED in action: the movable E-shape (F#m) and A-shape (B) barres up the neck.
+    static let moreBarre = Lesson(
+        id: "more-barre", title: "Barre Shapes Move", subtitle: "One shape, slid up the neck — B & F♯m",
+        tier: 3, prerequisite: "chord-bm", steps: chordSteps(["B", "F#m", "B", "F#m"]))
+
     static let changeFC = Lesson(
         id: "change-fc", title: "F ↔ C", subtitle: "Barre to open and back",
-        tier: 3, prerequisite: "chord-bm", steps: chordSteps(["F", "C", "F", "C"]))
+        tier: 3, prerequisite: "more-barre", steps: chordSteps(["F", "C", "F", "C"]))
+
+    // Power chords — root + fifth, two fingers, the backbone of rock.
+    static let powerChords = Lesson(
+        id: "power-chords", title: "Power Chords", subtitle: "Two notes, all attitude — E5 & A5",
+        tier: 3, prerequisite: "change-fc", steps: chordSteps(["E5", "A5", "E5", "A5"]))
+
+    // Same power-chord shape slid around for a riff.
+    static let powerRiff = Lesson(
+        id: "power-riff", title: "Power-Chord Riff", subtitle: "Slide the shape — E5 · G5 · A5",
+        tier: 3, prerequisite: "power-chords",
+        steps: strumSteps([("E5", 90, 4), ("G5", 90, 4), ("A5", 90, 4), ("E5", 90, 4)]))
 
     static let palmMute = Lesson(
         id: "palm-mute", title: "Palm Muting", subtitle: "Rest your palm on the strings, strum in time",
-        tier: 3, prerequisite: "change-fc", steps: strumSteps([("E", 80, 8)]))
+        tier: 3, prerequisite: "power-riff", steps: strumSteps([("E", 80, 8)]))
 
     static let fasterStrum = Lesson(
         id: "faster-strum", title: "Faster Strumming", subtitle: "Pick up the pace, keep it even",
         tier: 3, prerequisite: "palm-mute", steps: strumSteps([("A", 100, 8)]))
 
-    // Spiral revisit: open chords return alongside the new F barre.
+    // 16th-note feel — fast, even strumming to build a loose, steady wrist.
+    static let sixteenths = Lesson(
+        id: "sixteenths", title: "16th-Note Strumming", subtitle: "Fast and even — keep the wrist loose",
+        tier: 3, prerequisite: "faster-strum", steps: strumSteps([("E", 110, 16)]))
+
+    // Spiral revisit + tier-3 capstone: open chords return alongside the F barre.
     static let spiralBarreMix = Lesson(
         id: "spiral-barre-mix", title: "Open & Barre", subtitle: "Mix the F barre with open chords",
-        tier: 3, prerequisite: "change-fc", prerequisites: ["chord-f", "chord-c", "chord-g"],
+        tier: 3, prerequisite: "sixteenths", prerequisites: ["chord-f", "chord-c", "chord-g"],
         steps: strumSteps([("F", 90, 4), ("C", 90, 4), ("G", 90, 4), ("C", 90, 4)]))
 
     // MARK: - Tier 4 — lead basics (single-note scales & riffs)
@@ -238,7 +259,8 @@ enum LessonLibrary {
                                 chordEm, chordAm, songEmAm, chordE, chordA, chordD, chordG, chordC,
                                 changeEA, changeAD, changeGC,
                                 strumDown, strumKeep, firstSong, spiralGCD,
-                                cheaterF, chordF, chordBm, changeFC, palmMute, fasterStrum, spiralBarreMix,
+                                cheaterF, chordF, chordBm, moreBarre, changeFC, powerChords, powerRiff,
+                                palmMute, fasterStrum, sixteenths, spiralBarreMix,
                                 minorPentatonic, pentatonicRun, firstLick]
 
     // MARK: - Step builders
@@ -371,8 +393,9 @@ enum CourseLibrary {
         id: "barre-rhythm", title: "Barre & Rhythm",
         subtitle: "Tier 3 · Barre chords, palm muting", tier: 3,
         lessons: [LessonLibrary.cheaterF, LessonLibrary.chordF, LessonLibrary.chordBm,
-                  LessonLibrary.changeFC, LessonLibrary.palmMute, LessonLibrary.fasterStrum,
-                  LessonLibrary.spiralBarreMix])
+                  LessonLibrary.moreBarre, LessonLibrary.changeFC, LessonLibrary.powerChords,
+                  LessonLibrary.powerRiff, LessonLibrary.palmMute, LessonLibrary.fasterStrum,
+                  LessonLibrary.sixteenths, LessonLibrary.spiralBarreMix])
 
     static let leadBasics = Course(
         id: "lead-basics", title: "Lead Basics",

@@ -18,10 +18,28 @@ final class CourseTests: XCTestCase {
 
     func testTier3BarreContent() {
         XCTAssertFalse(CourseLibrary.barreRhythm.comingSoon)
-        XCTAssertEqual(CourseLibrary.barreRhythm.lessons.count, 7)        // easy-F + spiral mix
+        XCTAssertEqual(CourseLibrary.barreRhythm.lessons.count, 11)       // + movable barre, power chords, riff, 16ths
         XCTAssertEqual(CourseLibrary.barreRhythm.lessons.first?.id, "cheater-f")
         XCTAssertNotNil(LessonLibrary.chordF.steps.first?.chord?.barre)   // full F is a barre shape
         XCTAssertEqual(LessonLibrary.chordF.prerequisite, "cheater-f")
+        // Movable barres up the neck are still barre shapes.
+        XCTAssertNotNil(LessonLibrary.moreBarre.steps.first?.chord?.barre)
+        // Power chords are root + fifth — two pitch classes.
+        XCTAssertEqual(LessonLibrary.powerChords.steps.first?.chord?.id, "E5")
+        XCTAssertEqual(LessonLibrary.powerChords.steps.first?.chord?.pitchClasses.count, 2)
+        // The spiral mix is the tier-3 capstone, gated by the 16th-note lesson.
+        XCTAssertEqual(LessonLibrary.spiralBarreMix.prerequisite, "sixteenths")
+        XCTAssertEqual(CourseLibrary.barreRhythm.lessons.last?.id, "spiral-barre-mix")
+    }
+
+    func testTier3PrerequisiteChainIsConnected() {
+        // Every tier-3 lesson's spine prereq resolves to a real earlier lesson.
+        let ids = Set(LessonLibrary.all.map { $0.id })
+        for lesson in CourseLibrary.barreRhythm.lessons {
+            if let prereq = lesson.prerequisite { XCTAssertTrue(ids.contains(prereq), "\(lesson.id) → \(prereq)") }
+        }
+        // Power-chord lessons resolve every chord (no dropped steps).
+        XCTAssertEqual(LessonLibrary.powerRiff.steps.compactMap { $0.chord?.id }, ["E5", "G5", "A5", "E5"])
     }
 
     func testTier4ScaleContent() {
