@@ -108,6 +108,44 @@ final class StatsStoreTests: XCTestCase {
         XCTAssertTrue(s.isCompleted("chord-d"))
     }
 
+    // MARK: - Mastery trend (baseline)
+
+    func testImprovingSkillTrendsUp() {
+        let s = makeStore()
+        for _ in 0..<3 { s.recordRun("chord-c", score: 1.0) }   // fast EMA leads the slow baseline
+        XCTAssertGreaterThan(s.trend(of: "chord-c"), 0)
+        XCTAssertLessThan(s.masteryBaseline(of: "chord-c"), s.mastery(of: "chord-c"))
+    }
+
+    func testSlippingSkillTrendsDown() {
+        let s = makeStore()
+        s.markCompleted("chord-g")           // learned & steady: mastery == baseline == 1.0
+        s.recordRun("chord-g", score: 0.0)   // a botched review pulls mastery below the baseline
+        XCTAssertLessThan(s.trend(of: "chord-g"), 0)
+    }
+
+    func testMarkCompletedHasNoTrend() {
+        let s = makeStore()
+        s.markCompleted("chord-d")
+        XCTAssertEqual(s.trend(of: "chord-d"), 0, accuracy: 1e-9)   // fully known, nothing to surface
+    }
+
+    func testUntouchedSkillHasNoTrend() {
+        let s = makeStore()
+        XCTAssertEqual(s.trend(of: "never-played"), 0, accuracy: 1e-9)
+        XCTAssertEqual(s.masteryBaseline(of: "never-played"), 0, accuracy: 1e-9)
+    }
+
+    func testBaselinePersists() {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("abstrum-stats-\(UUID().uuidString)")
+        let a = ProgressStore(directory: dir, filename: "progress.json")
+        for _ in 0..<3 { a.recordRun("chord-c", score: 1.0) }
+        let base = a.masteryBaseline(of: "chord-c")
+        let b = ProgressStore(directory: dir, filename: "progress.json")
+        XCTAssertEqual(b.masteryBaseline(of: "chord-c"), base, accuracy: 1e-9)
+    }
+
     // MARK: - Spaced repetition
 
     func testMasterySchedulesFirstReviewTomorrow() {

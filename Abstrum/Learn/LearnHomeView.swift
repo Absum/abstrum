@@ -11,6 +11,7 @@ struct LearnHomeView: View {
     @State private var showPlayAlong = false
     @State private var showHighway = false
     @State private var showStats = false
+    @State private var showMastery = false
     @State private var showReview = false
     @State private var showSession = false
     @State private var mixLesson: Lesson?
@@ -65,6 +66,7 @@ struct LearnHomeView: View {
         .fullScreenCover(item: $mixLesson) { lesson in
             LessonView(lesson: lesson) { mixLesson = nil }
         }
+        .sheet(isPresented: $showMastery) { MasteryView { showMastery = false } }
         .sheet(isPresented: $showStats) { StatsView { showStats = false } }
         .onAppear {
             store.refreshStreak()
@@ -107,6 +109,15 @@ struct LearnHomeView: View {
             if ProcessInfo.processInfo.environment["ABSTRUM_STATS"] != nil {
                 showStats = true
             }
+            if ProcessInfo.processInfo.environment["ABSTRUM_SEED_MASTERY"] != nil, store.completedLessonIDs.isEmpty {
+                ["open-strings", "string-switching", "low-to-high", "chord-em"].forEach { store.markCompleted($0) }
+                for _ in 0..<3 { store.recordRun("chord-am", score: 0.9) }   // in progress, improving
+                for _ in 0..<2 { store.recordRun("chord-e", score: 0.7) }    // earlier, improving
+                store.markCompleted("chord-d"); store.recordRun("chord-d", score: 0.2)   // slipping
+            }
+            if ProcessInfo.processInfo.environment["ABSTRUM_MASTERY"] != nil {
+                showMastery = true
+            }
             #endif
         }
     }
@@ -131,7 +142,7 @@ struct LearnHomeView: View {
 
     private var competenceStrip: some View {
         let due = store.dueForReview().count
-        return Button { showStats = true } label: {
+        return Button { showMastery = true } label: {
             HStack(spacing: 0) {
                 stat(icon: "checkmark.seal.fill", value: "\(skillsLearned)", label: "SKILLS", tint: Theme.teal)
                 statDivider

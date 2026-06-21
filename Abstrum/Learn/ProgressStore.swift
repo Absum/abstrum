@@ -25,7 +25,16 @@ final class ProgressStore {
     static let masteryThreshold = 0.8
     private static let masteryAlpha = 0.4
 
+    /// A slower-moving EMA of the same run scores. `mastery − baseline` is the
+    /// trend: positive while a skill is improving, negative when it's slipping,
+    /// ~0 once it's steady — drives the "up from X%" / weakness surfacing.
+    private(set) var masteryBaseline: [String: Double] = [:]
+    private static let baselineAlpha = 0.12
+
     func mastery(of lessonID: String) -> Double { mastery[lessonID] ?? 0 }
+    func masteryBaseline(of lessonID: String) -> Double { masteryBaseline[lessonID] ?? mastery(of: lessonID) }
+    /// Recent direction of a skill (positive = improving, negative = slipping).
+    func trend(of lessonID: String) -> Double { mastery(of: lessonID) - masteryBaseline(of: lessonID) }
 
     // MARK: - Spaced repetition
 
@@ -146,6 +155,7 @@ final class ProgressStore {
         let isNew = !completedLessonIDs.contains(lessonID)
         completedLessonIDs.insert(lessonID)
         mastery[lessonID] = 1.0
+        masteryBaseline[lessonID] = 1.0          // fully known → no trend
         if isNew {
             xp += 25                     // reward only the first completion
             scheduleReview(lessonID, stage: 0, from: date)   // first review tomorrow
@@ -163,6 +173,8 @@ final class ProgressStore {
         let alreadyLearned = completedLessonIDs.contains(lessonID)
         let updated = (mastery[lessonID] ?? 0) * (1 - Self.masteryAlpha) + s * Self.masteryAlpha
         mastery[lessonID] = updated
+        // Slow baseline trails the fast mastery so their gap reads as a trend.
+        masteryBaseline[lessonID] = (masteryBaseline[lessonID] ?? 0) * (1 - Self.baselineAlpha) + s * Self.baselineAlpha
         if alreadyLearned {
             // A run of a learned skill is a review: clean runs space it out further.
             recordReview(lessonID, clean: s >= Self.masteryThreshold, on: date)
@@ -231,6 +243,7 @@ final class ProgressStore {
     func reset() {
         completedLessonIDs = []
         mastery = [:]
+        masteryBaseline = [:]
         reviews = [:]
         practiceTempo = [:]
         xp = 0; practiceSeconds = 0; currentStreak = 0; bestStreak = 0
@@ -255,6 +268,7 @@ final class ProgressStore {
     private struct Snapshot: Codable {
         var completedLessonIDs: [String]
         var mastery: [String: Double]?
+        var masteryBaseline: [String: Double]?
         var reviews: [String: ReviewState]?
         var practiceTempo: [String: Double]?
         var xp: Int?
@@ -272,6 +286,9 @@ final class ProgressStore {
         mastery = s.mastery ?? [:]
         // Migration: pre-mastery completions count as fully mastered.
         for id in completedLessonIDs where mastery[id] == nil { mastery[id] = 1.0 }
+        masteryBaseline = s.masteryBaseline ?? [:]
+        // Migration: seed baselines from current mastery so trends start at 0.
+        for (id, m) in mastery where masteryBaseline[id] == nil { masteryBaseline[id] = m }
         reviews = s.reviews ?? [:]
         practiceTempo = s.practiceTempo ?? [:]
         xp = s.xp ?? 0
@@ -285,6 +302,7 @@ final class ProgressStore {
     private func save() {
         let snapshot = Snapshot(completedLessonIDs: Array(completedLessonIDs),
                                 mastery: mastery,
+                                masteryBaseline: masteryBaseline,
                                 reviews: reviews,
                                 practiceTempo: practiceTempo,
                                 xp: xp, practiceSeconds: practiceSeconds,
