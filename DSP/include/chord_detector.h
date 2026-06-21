@@ -1,13 +1,13 @@
 /*
- * Pickup DSP core — chroma (pitch-class) features for chord recognition.
+ * Abstrum DSP core — chroma (pitch-class) features for chord recognition.
  *
  * Computes a 12-bin chromagram from a buffer of mono samples: an FFT magnitude
  * spectrum folded onto the 12 pitch classes (C..B). Template matching against
  * a specific chord is done by the caller. Portable C ABI so it is shared with a
  * future Android build via the NDK, like the pitch detector.
  */
-#ifndef PICKUP_CHORD_DETECTOR_H
-#define PICKUP_CHORD_DETECTOR_H
+#ifndef ABSTRUM_CHORD_DETECTOR_H
+#define ABSTRUM_CHORD_DETECTOR_H
 
 #include <stddef.h>
 
@@ -36,4 +36,4 @@ int pk_chord_detector_chroma(PKChordDetector *detector,
 }
 #endif
 
-#endif /* PICKUP_CHORD_DETECTOR_H */
+#endif /* ABSTRUM_CHORD_DETECTOR_H */

@@ -9,7 +9,7 @@ final class AdaptiveTempoTests: XCTestCase {
 
     private func makeStore() -> ProgressStore {
         let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("pickup-tempo-\(UUID().uuidString)")
+            .appendingPathComponent("abstrum-tempo-\(UUID().uuidString)")
         return ProgressStore(directory: dir, filename: "progress.json")
     }
 
@@ -53,7 +53,7 @@ final class AdaptiveTempoTests: XCTestCase {
 
     func testCleanResultRaisesAndPersistsTempo() {
         let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("pickup-tempo-\(UUID().uuidString)")
+            .appendingPathComponent("abstrum-tempo-\(UUID().uuidString)")
         let a = ProgressStore(directory: dir, filename: "progress.json")
         a.recordTempoResult("first-song", score: 1.0)
         let raised = a.tempoFactor(of: "first-song")

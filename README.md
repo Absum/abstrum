@@ -1,4 +1,4 @@
-# Pickup
+# Abstrum
 
 Learn guitar by playing — a native iOS app that listens to you play and gives instant feedback.
 
@@ -15,12 +15,12 @@ See [SPEC.md](./SPEC.md) for the full product & technical spec.
 
 ```
 DSP/                     Portable C++ pitch-detection core (YIN)
-Pickup/
+Abstrum/
   App/                   App entry + root view
   Audio/                 AVAudioEngine capture + Swift wrapper over the C++ core
   Core/                  Note/frequency math
   Tuner/                 Chromatic tuner UI
-  Pickup-Bridging-Header.h
+  Abstrum-Bridging-Header.h
 project.yml              XcodeGen project definition (the .xcodeproj is generated)
 ```
 
@@ -30,10 +30,10 @@ Requires Xcode, plus [XcodeGen](https://github.com/yonyz/XcodeGen) (`brew instal
 The `.xcodeproj` is generated and git-ignored.
 
 ```sh
-xcodegen generate          # regenerate Pickup.xcodeproj from project.yml
-open Pickup.xcodeproj       # then build/run from Xcode, or:
+xcodegen generate          # regenerate Abstrum.xcodeproj from project.yml
+open Abstrum.xcodeproj       # then build/run from Xcode, or:
 
-xcodebuild -project Pickup.xcodeproj -scheme Pickup \
+xcodebuild -project Abstrum.xcodeproj -scheme Abstrum \
   -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17' build
 ```
 

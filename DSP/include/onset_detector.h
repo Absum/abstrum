@@ -1,5 +1,5 @@
 /*
- * Pickup DSP core — note-onset (attack) detection via spectral flux.
+ * Abstrum DSP core — note-onset (attack) detection via spectral flux.
  *
  * Streams mono samples through a Hann-windowed short-time FFT and measures the
  * positive spectral flux (frame-to-frame magnitude increase) within the guitar
@@ -8,8 +8,8 @@
  * letting the caller grade how tight a pluck was to the beat. Portable C ABI so
  * it is shared with a future Android build via the NDK, like the other cores.
  */
-#ifndef PICKUP_ONSET_DETECTOR_H
-#define PICKUP_ONSET_DETECTOR_H
+#ifndef ABSTRUM_ONSET_DETECTOR_H
+#define ABSTRUM_ONSET_DETECTOR_H
 
 #include <stddef.h>
 
@@ -44,4 +44,4 @@ long long pk_onset_detector_frames(const PKOnsetDetector *detector);
 }
 #endif
 
-#endif /* PICKUP_ONSET_DETECTOR_H */
+#endif /* ABSTRUM_ONSET_DETECTOR_H */

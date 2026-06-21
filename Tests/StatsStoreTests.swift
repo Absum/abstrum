@@ -8,7 +8,7 @@ import XCTest
 final class StatsStoreTests: XCTestCase {
     private func makeStore() -> ProgressStore {
         let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("pickup-stats-\(UUID().uuidString)")
+            .appendingPathComponent("abstrum-stats-\(UUID().uuidString)")
         return ProgressStore(directory: dir, filename: "progress.json")
     }
 
@@ -172,7 +172,7 @@ final class StatsStoreTests: XCTestCase {
 
     func testReviewSchedulePersists() {
         let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("pickup-stats-\(UUID().uuidString)")
+            .appendingPathComponent("abstrum-stats-\(UUID().uuidString)")
         let base = Date()
         let a = ProgressStore(directory: dir, filename: "progress.json")
         a.markCompleted("chord-em", on: base)
@@ -183,7 +183,7 @@ final class StatsStoreTests: XCTestCase {
 
     func testPersistenceRoundTrip() {
         let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("pickup-stats-\(UUID().uuidString)")
+            .appendingPathComponent("abstrum-stats-\(UUID().uuidString)")
         let a = ProgressStore(directory: dir, filename: "progress.json")
         a.awardXP(50)
         a.markCompleted("x")          // +25

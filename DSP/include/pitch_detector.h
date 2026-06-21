@@ -1,12 +1,12 @@
 /*
- * Pickup DSP core — monophonic pitch detection (YIN).
+ * Abstrum DSP core — monophonic pitch detection (YIN).
  *
  * Portable C/C++ with a flat C ABI so it can be shared verbatim between the
  * iOS app (via the Swift bridging header) and a future Android build (via the
  * NDK). Keep this header free of C++ types so it stays importable from Swift.
  */
-#ifndef PICKUP_PITCH_DETECTOR_H
-#define PICKUP_PITCH_DETECTOR_H
+#ifndef ABSTRUM_PITCH_DETECTOR_H
+#define ABSTRUM_PITCH_DETECTOR_H
 
 #include <stddef.h>
 
@@ -40,4 +40,4 @@ float pk_pitch_detector_process(PKPitchDetector *detector,
 }
 #endif
 
-#endif /* PICKUP_PITCH_DETECTOR_H */
+#endif /* ABSTRUM_PITCH_DETECTOR_H */

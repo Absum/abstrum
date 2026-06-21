@@ -1,6 +1,6 @@
-name: Pickup
+name: Abstrum
 options:
-  bundleIdPrefix: fi.absum.pickup
+  bundleIdPrefix: fi.absum.abstrum
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -18,29 +18,29 @@ settings:
     CLANG_CXX_LIBRARY: "libc++"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 targets:
-  Pickup:
+  Abstrum:
     type: application
     platform: iOS
     sources:
-      - path: Pickup
+      - path: Abstrum
       - path: DSP
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: fi.absum.pickup
-        PRODUCT_NAME: Pickup
+        PRODUCT_BUNDLE_IDENTIFIER: fi.absum.abstrum
+        PRODUCT_NAME: Abstrum
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        SWIFT_OBJC_BRIDGING_HEADER: Pickup/Pickup-Bridging-Header.h
+        SWIFT_OBJC_BRIDGING_HEADER: Abstrum/Abstrum-Bridging-Header.h
         HEADER_SEARCH_PATHS:
           - $(SRCROOT)/DSP/include
         SUPPORTS_MACCATALYST: NO
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
     info:
-      path: Pickup/Info.plist
+      path: Abstrum/Info.plist
       properties:
-        CFBundleDisplayName: Pickup
+        CFBundleDisplayName: Abstrum
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        NSMicrophoneUsageDescription: "Pickup listens through your microphone to hear the notes and chords you play, so it can give you instant feedback as you practice."
+        NSMicrophoneUsageDescription: "Abstrum listens through your microphone to hear the notes and chords you play, so it can give you instant feedback as you practice."
         UILaunchScreen: {}
         UIApplicationSupportsIndirectInputEvents: true
         # Portrait-only — the UI is designed for portrait.
@@ -54,7 +54,7 @@ targets:
           - Rajdhani-Medium.ttf
           - Rajdhani-SemiBold.ttf
           - Rajdhani-Bold.ttf
-  PickupTests:
+  AbstrumTests:
     type: bundle.unit-test
     platform: iOS
     # Logic tests (no TEST_HOST): compile the portable C++ core directly so we
@@ -62,32 +62,32 @@ targets:
     sources:
       - path: Tests
       - path: DSP
-      - path: Pickup/Core/NoteMath.swift
-      - path: Pickup/Core/GuitarTuning.swift
-      - path: Pickup/Learn/Lesson.swift
-      - path: Pickup/Learn/ProgressStore.swift
-      - path: Pickup/Learn/AdaptiveTempo.swift
-      - path: Pickup/Learn/Scaffold.swift
-      - path: Pickup/Learn/DailySession.swift
-      - path: Pickup/Learn/InterleavedDrill.swift
-      - path: Pickup/Learn/ReminderScheduler.swift
-      - path: Pickup/Chords/Chord.swift
-      - path: Pickup/Chords/ChordProgression.swift
-      - path: Pickup/Songs/Song.swift
-      - path: Pickup/Highway/TabImport.swift
-      - path: Pickup/Audio/ToneSynth.swift
+      - path: Abstrum/Core/NoteMath.swift
+      - path: Abstrum/Core/GuitarTuning.swift
+      - path: Abstrum/Learn/Lesson.swift
+      - path: Abstrum/Learn/ProgressStore.swift
+      - path: Abstrum/Learn/AdaptiveTempo.swift
+      - path: Abstrum/Learn/Scaffold.swift
+      - path: Abstrum/Learn/DailySession.swift
+      - path: Abstrum/Learn/InterleavedDrill.swift
+      - path: Abstrum/Learn/ReminderScheduler.swift
+      - path: Abstrum/Chords/Chord.swift
+      - path: Abstrum/Chords/ChordProgression.swift
+      - path: Abstrum/Songs/Song.swift
+      - path: Abstrum/Highway/TabImport.swift
+      - path: Abstrum/Audio/ToneSynth.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        SWIFT_OBJC_BRIDGING_HEADER: Tests/PickupTests-Bridging-Header.h
+        SWIFT_OBJC_BRIDGING_HEADER: Tests/AbstrumTests-Bridging-Header.h
         HEADER_SEARCH_PATHS:
           - $(SRCROOT)/DSP/include
 schemes:
-  Pickup:
+  Abstrum:
     build:
       targets:
-        Pickup: all
+        Abstrum: all
     test:
       targets:
-        - PickupTests
+        - AbstrumTests
       gatherCoverageData: false
