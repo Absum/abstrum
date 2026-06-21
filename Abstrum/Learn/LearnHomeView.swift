@@ -22,7 +22,7 @@ struct LearnHomeView: View {
                 ArcticBackground()
                 VStack(spacing: 0) {
                     header.padding(.top, 12)
-                    statsStrip.padding(.horizontal, 22).padding(.top, 14)
+                    competenceStrip.padding(.horizontal, 22).padding(.top, 14)
                     ScrollView {
                         VStack(spacing: 16) {
                             let session = DailySession.today(store)
@@ -118,15 +118,27 @@ struct LearnHomeView: View {
         }
     }
 
-    private var statsStrip: some View {
-        Button { showStats = true } label: {
+    // Competence first (SDT): the home leads with what you're getting good at
+    // and what's due, not the streak/XP loop (those move into the stats detail).
+    private var skillsLearned: Int {
+        LessonLibrary.all.filter { store.completedLessonIDs.contains($0.id) }.count
+    }
+    private var pathProgress: Int {
+        let total = LessonLibrary.all.count
+        guard total > 0 else { return 0 }
+        return Int((Double(skillsLearned) / Double(total) * 100).rounded())
+    }
+
+    private var competenceStrip: some View {
+        let due = store.dueForReview().count
+        return Button { showStats = true } label: {
             HStack(spacing: 0) {
-                stat(icon: "flame.fill", value: "\(store.currentStreak)", label: "STREAK",
-                     tint: store.isActiveToday() ? Theme.teal : Theme.frost.opacity(0.5))
+                stat(icon: "checkmark.seal.fill", value: "\(skillsLearned)", label: "SKILLS", tint: Theme.teal)
                 statDivider
-                stat(icon: "bolt.fill", value: "LVL \(store.level)", label: "LEVEL", tint: Theme.teal)
+                stat(icon: "clock.arrow.circlepath", value: "\(due)", label: "TO REVIEW",
+                     tint: due > 0 ? Theme.teal : Theme.frost.opacity(0.5))
                 statDivider
-                stat(icon: "clock.fill", value: "\(store.practiceMinutes)m", label: "PRACTICE", tint: Theme.teal)
+                stat(icon: "chart.line.uptrend.xyaxis", value: "\(pathProgress)%", label: "OF PATH", tint: Theme.teal)
                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Theme.frost.opacity(0.4)).padding(.trailing, 14)
             }

@@ -1,7 +1,8 @@
 //
 //  StatsView.swift
-//  The habit-loop dashboard: daily streak, level/XP, practice time, and a
-//  seven-day activity strip. Reads ProgressStore.
+//  Your-progress dashboard. Competence first (SDT): leads with skills learned
+//  and path progress; the habit-loop metrics (streak, level/XP, practice time)
+//  are demoted below. Reads ProgressStore.
 //
 
 import SwiftUI
@@ -17,9 +18,9 @@ struct StatsView: View {
                 topBar.padding(.top, 12)
                 ScrollView {
                     VStack(spacing: 22) {
-                        streakHero
-                        levelCard
+                        competenceHero
                         statsGrid
+                        levelCard       // XP/level demoted below competence (SDT)
                         weekStrip
                     }
                     .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 30)
@@ -46,26 +47,48 @@ struct StatsView: View {
         .padding(.horizontal, 20)
     }
 
-    private var streakHero: some View {
-        let active = store.isActiveToday()
-        return VStack(spacing: 6) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(active ? Theme.teal : Theme.frost.opacity(0.35))
-                .shadow(color: active ? Theme.teal.opacity(0.7) : .clear, radius: 20)
-            Text("\(store.currentStreak)")
+    private var skillsLearned: Int {
+        LessonLibrary.all.filter { store.completedLessonIDs.contains($0.id) }.count
+    }
+    private var pathTotal: Int { LessonLibrary.all.count }
+    private var pathProgress: Int {
+        guard pathTotal > 0 else { return 0 }
+        return Int((Double(skillsLearned) / Double(pathTotal) * 100).rounded())
+    }
+    private var dueCount: Int { store.dueForReview().count }
+
+    private var competenceHero: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 52))
+                .foregroundStyle(Theme.teal)
+                .shadow(color: Theme.teal.opacity(0.6), radius: 18)
+            Text("\(skillsLearned)")
                 .font(.custom("Rajdhani-SemiBold", size: 64)).foregroundStyle(.white)
-            Text(store.currentStreak == 1 ? "DAY STREAK" : "DAY STREAK")
+            Text(skillsLearned == 1 ? "SKILL LEARNED" : "SKILLS LEARNED")
                 .font(Theme.light(12)).tracking(4).foregroundStyle(Theme.frost.opacity(0.7))
-            Text(active ? "Practiced today — keep it going"
-                        : "Play something today to keep your streak")
+            Text("\(pathProgress)% of the path"
+                 + (dueCount > 0 ? "  ·  \(dueCount) due to review" : "  ·  all caught up"))
                 .font(Theme.body(13)).foregroundStyle(Theme.frost.opacity(0.55))
                 .padding(.top, 2)
+            pathBar.padding(.top, 12).padding(.horizontal, 24)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
         .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(.white.opacity(0.05)))
         .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(.white.opacity(0.10), lineWidth: 1))
+    }
+
+    private var pathBar: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.10))
+                Capsule().fill(Theme.teal)
+                    .frame(width: geo.size.width * CGFloat(pathProgress) / 100)
+                    .shadow(color: Theme.teal.opacity(0.5), radius: 8)
+            }
+        }
+        .frame(height: 8)
     }
 
     private var levelCard: some View {
@@ -98,10 +121,10 @@ struct StatsView: View {
     private var statsGrid: some View {
         let cols = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
         return LazyVGrid(columns: cols, spacing: 14) {
+            tile("\(dueCount)", "TO REVIEW", "clock.arrow.circlepath")
             tile("\(store.practiceMinutes)", "MIN PRACTICED", "clock.fill")
+            tile("\(store.currentStreak)", "DAY STREAK", "flame.fill")
             tile("\(store.bestStreak)", "BEST STREAK", "trophy.fill")
-            tile("\(store.completedLessonIDs.count)", "LESSONS DONE", "checkmark.seal.fill")
-            tile("\(store.xp)", "TOTAL XP", "bolt.fill")
         }
     }
 
