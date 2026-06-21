@@ -208,26 +208,20 @@ struct LessonView: View {
     }
 
     private var targetNote: some View {
-        VStack(spacing: 10) {
-            ZStack {
-                if inTune {
-                    Circle().fill(Theme.teal.opacity(0.22)).frame(width: 188, height: 188).blur(radius: 40)
-                }
-                Circle()
-                    .stroke(inTune ? Theme.teal : .white.opacity(0.12), lineWidth: 3)
-                    .frame(width: 188, height: 188)
-                VStack(spacing: 0) {
-                    Text(model.currentStep.note)
-                        .font(.custom("Rajdhani-SemiBold", size: 110))
-                        .foregroundStyle(inTune ? Theme.teal : .white)
-                    Text(model.currentStep.octaveLabel)
-                        .font(Theme.light(15)).tracking(3)
-                        .foregroundStyle(Theme.frost.opacity(0.7))
-                }
-            }
+        // Same treatment as the chord target — a large glowing name, no ring —
+        // so note steps and chord steps look consistent within a lesson.
+        VStack(spacing: 6) {
+            Text(model.currentStep.note)
+                .font(.custom("Rajdhani-SemiBold", size: 96))
+                .foregroundStyle(inTune ? Theme.teal : .white)
+                .shadow(color: inTune ? Theme.teal.opacity(0.7) : .clear, radius: 18)
+            Text(model.currentStep.octaveLabel)
+                .font(Theme.light(15)).tracking(3)
+                .foregroundStyle(Theme.frost.opacity(0.7))
             if showsHint {
                 Text(model.currentStep.hint)
                     .font(Theme.body(16)).foregroundStyle(Theme.frost.opacity(0.8))
+                    .padding(.top, 4)
             }
         }
         .animation(.snappy, value: inTune)
