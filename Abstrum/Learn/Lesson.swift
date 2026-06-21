@@ -255,13 +255,39 @@ enum LessonLibrary {
         tier: 4, prerequisite: "pentatonic-run",
         steps: noteSteps([(3, 0), (3, 2), (3, 0), (2, 2), (2, 0), (1, 3), (1, 0)]))
 
+    // The movable A-minor-pentatonic Box 1 at the 5th fret — the shape that slides.
+    static let pentatonicBox1 = Lesson(
+        id: "pentatonic-box1", title: "Pentatonic Box 1", subtitle: "The movable shape — A minor, 5th fret",
+        tier: 4, prerequisite: "first-lick",
+        steps: noteSteps([(0, 5), (0, 8), (1, 5), (1, 7), (2, 5), (2, 7),
+                          (3, 5), (3, 7), (4, 5), (4, 8), (5, 5), (5, 8)]))
+
+    static let box1Lick = Lesson(
+        id: "box1-lick", title: "Box-1 Lick", subtitle: "A lead line inside the box",
+        tier: 4, prerequisite: "pentatonic-box1",
+        steps: noteSteps([(4, 8), (4, 5), (3, 7), (3, 5), (2, 7), (2, 5), (1, 7), (1, 5)]))
+
+    // One-octave G major — the major scale behind most melodies.
+    static let majorScaleG = Lesson(
+        id: "major-scale-g", title: "The Major Scale", subtitle: "G major, one octave",
+        tier: 4, prerequisite: "box1-lick",
+        steps: noteSteps([(0, 3), (1, 0), (1, 2), (1, 3), (2, 0), (2, 2), (2, 4), (3, 0)]))
+
+    // Chromatic 1-2-3-4 spider walk — finger independence and hand sync.
+    static let fingerIndependence = Lesson(
+        id: "finger-independence", title: "Finger Independence", subtitle: "The 1-2-3-4 spider walk",
+        tier: 4, prerequisite: "major-scale-g",
+        steps: noteSteps([(0, 1), (0, 2), (0, 3), (0, 4), (1, 1), (1, 2), (1, 3), (1, 4),
+                          (2, 1), (2, 2), (2, 3), (2, 4)]))
+
     static let all: [Lesson] = [openStrings, stringSwitching, lowToHigh, lowENotes, aStringNotes,
                                 chordEm, chordAm, songEmAm, chordE, chordA, chordD, chordG, chordC,
                                 changeEA, changeAD, changeGC,
                                 strumDown, strumKeep, firstSong, spiralGCD,
                                 cheaterF, chordF, chordBm, moreBarre, changeFC, powerChords, powerRiff,
                                 palmMute, fasterStrum, sixteenths, spiralBarreMix,
-                                minorPentatonic, pentatonicRun, firstLick]
+                                minorPentatonic, pentatonicRun, firstLick,
+                                pentatonicBox1, box1Lick, majorScaleG, fingerIndependence]
 
     // MARK: - Step builders
 
@@ -400,7 +426,9 @@ enum CourseLibrary {
     static let leadBasics = Course(
         id: "lead-basics", title: "Lead Basics",
         subtitle: "Tier 4 · Pentatonic scales & riffs", tier: 4,
-        lessons: [LessonLibrary.minorPentatonic, LessonLibrary.pentatonicRun, LessonLibrary.firstLick])
+        lessons: [LessonLibrary.minorPentatonic, LessonLibrary.pentatonicRun, LessonLibrary.firstLick,
+                  LessonLibrary.pentatonicBox1, LessonLibrary.box1Lick, LessonLibrary.majorScaleG,
+                  LessonLibrary.fingerIndependence])
 
     static let intermediate = Course(
         id: "intermediate", title: "Intermediate",

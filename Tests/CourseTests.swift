@@ -44,10 +44,20 @@ final class CourseTests: XCTestCase {
 
     func testTier4ScaleContent() {
         XCTAssertFalse(CourseLibrary.leadBasics.comingSoon)
-        XCTAssertEqual(CourseLibrary.leadBasics.lessons.count, 3)
+        XCTAssertEqual(CourseLibrary.leadBasics.lessons.count, 7)   // + box 1, lick, major scale, finger drill
         let scale = LessonLibrary.minorPentatonic
         XCTAssertEqual(scale.steps.first?.note, "A")
-        XCTAssertTrue(scale.steps.allSatisfy { $0.chord == nil && $0.strum == nil })  // pure note steps
+        // Every lead lesson is pure single-note content.
+        for lesson in CourseLibrary.leadBasics.lessons {
+            XCTAssertTrue(lesson.steps.allSatisfy { $0.chord == nil && $0.strum == nil }, lesson.id)
+        }
+        // Box 1 is the movable shape — entirely up at the 5th fret and above.
+        XCTAssertTrue(LessonLibrary.pentatonicBox1.steps.allSatisfy { ($0.position?.fret ?? 0) >= 5 })
+        // The major scale spells G major, one octave (G … F♯ … G).
+        let major = LessonLibrary.majorScaleG.steps.map { $0.note }
+        XCTAssertEqual(major.first, "G")
+        XCTAssertEqual(major.last, "G")
+        XCTAssertTrue(major.contains("F♯") || major.contains("F#"))
     }
 
     func testFullSixTierMap() {
