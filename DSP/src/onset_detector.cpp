@@ -20,11 +20,13 @@ constexpr size_t kHop = 512;          // ~12 ms hop → onset resolution
 constexpr float kDefaultRmsGate = 0.0025f;
 constexpr double kBandLow = 70.0;     // guitar fundamentals start ~82 Hz (E2)
 constexpr double kBandHigh = 1100.0;  // below the 1200/1760 Hz metronome click
-constexpr int kHistory = 43;          // ~0.5 s of flux for the moving threshold
-constexpr int kRefractoryHops = 4;    // ≥ ~48 ms between onsets
+// Time-based tuning (converted to hop counts at create() from the actual
+// sample rate, so the behavior doesn't drift between 44.1 and 48 kHz).
+constexpr double kHistorySeconds = 0.5;      // flux window for the moving threshold
+constexpr double kRefractorySeconds = 0.048; // minimum gap between onsets
+constexpr double kWarmupSeconds = 0.093;     // settle the threshold before reporting
 constexpr float kThreshMult = 1.6f;   // flux must exceed mult × recent mean …
 constexpr float kThreshBias = 1e-4f;  // … plus a small floor
-constexpr int kWarmupHops = 8;        // settle the threshold before reporting
 constexpr double kMinBandFraction = 0.20;  // ≥20% of energy must be in-band, so
                                            // high tones/clicks can't trigger
 
@@ -43,6 +45,9 @@ struct PKOnsetDetector {
     size_t sinceHop;                 // new samples since the last analysis
     std::vector<float> prevMag;      // previous frame's band magnitudes
     std::vector<float> history;      // recent flux values (ring)
+    int histLen;                     // time-derived hop counts (see kSeconds above)
+    int refractoryHops;
+    int warmupHops;
     int histPos;
     int histCount;
     float lastFlux;
@@ -70,11 +75,15 @@ PKOnsetDetector *pk_onset_detector_create(double sampleRate) {
     d->filled = 0;
     d->sinceHop = 0;
     d->prevMag.assign(d->binHigh > d->binLow ? d->binHigh - d->binLow : 0, 0.0f);
-    d->history.assign(kHistory, 0.0f);
+    const double hopSeconds = double(kHop) / d->sampleRate;
+    d->histLen = std::max(1, int(std::llround(kHistorySeconds / hopSeconds)));
+    d->refractoryHops = std::max(1, int(std::llround(kRefractorySeconds / hopSeconds)));
+    d->warmupHops = std::max(1, int(std::llround(kWarmupSeconds / hopSeconds)));
+    d->history.assign(size_t(d->histLen), 0.0f);
     d->histPos = 0;
     d->histCount = 0;
     d->lastFlux = 0.0f;
-    d->hopsSinceOnset = kRefractoryHops;
+    d->hopsSinceOnset = d->refractoryHops;
     d->hopsSeen = 0;
     d->frames = 0;
     d->fftBuf.assign(kWindow, Complex{0.0f, 0.0f});
@@ -141,9 +150,9 @@ float analyze(PKOnsetDetector *d, bool &onset) {
     }
     const float threshold = mean * kThreshMult + kThreshBias;
 
-    if (d->hopsSeen >= kWarmupHops && rms >= d->gate && inBand &&
+    if (d->hopsSeen >= d->warmupHops && rms >= d->gate && inBand &&
         flux > threshold && d->lastFlux <= threshold &&
-        d->hopsSinceOnset >= kRefractoryHops) {
+        d->hopsSinceOnset >= d->refractoryHops) {
         onset = true;
         d->hopsSinceOnset = 0;
     } else {
@@ -151,9 +160,9 @@ float analyze(PKOnsetDetector *d, bool &onset) {
     }
 
     // Push flux into the history ring.
-    d->history[d->histPos] = flux;
-    d->histPos = (d->histPos + 1) % kHistory;
-    if (d->histCount < kHistory) d->histCount++;
+    d->history[size_t(d->histPos)] = flux;
+    d->histPos = (d->histPos + 1) % d->histLen;
+    if (d->histCount < d->histLen) d->histCount++;
     d->lastFlux = flux;
     d->hopsSeen++;
     return flux;
@@ -184,8 +193,10 @@ int pk_onset_detector_process(PKOnsetDetector *detector,
             bool onset = false;
             analyze(detector, onset);
             if (onset && written < maxOut) {
-                // Date the onset to the centre of the analysis window.
-                outFrames[written++] = detector->frames - (long long)(kWindow / 2);
+                // The attack's energy arrived within the newest hop, so date
+                // the onset to that hop's centre (window-centre dating sat a
+                // half-window early — a systematic ~12 ms bias at 44.1 kHz).
+                outFrames[written++] = detector->frames - (long long)(kHop / 2);
             }
         }
     }
