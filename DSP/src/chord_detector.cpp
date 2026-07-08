@@ -1,5 +1,6 @@
 #include "chord_detector.h"
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -12,9 +13,13 @@ namespace {
 constexpr float kDefaultRmsGate = 0.0025f;  // overridable via set_gate
 constexpr double kMinFreq = 70.0;    // focus on the guitar range
 constexpr double kMaxFreq = 1200.0;
-// Large analysis window: at 44.1 kHz this is ~0.37s and ~2.7 Hz/bin, fine
-// enough to separate semitones down in the low-E register (E2 vs F2).
-constexpr size_t kFFT = 16384;
+// Analysis window: at 44.1 kHz this is ~0.19s and ~5.4 Hz/bin. Adjacent low
+// fundamentals (E2 vs F2, 4.9 Hz apart) blur at any practical window — the
+// discrimination actually comes from their harmonics, which land in
+// well-resolved bins and fold to the same pitch class — so favour response
+// time over bin width. (Was 16384 ≈ 0.37s: chord changes felt laggy because
+// the old chord dominated the window for a third of a second.)
+constexpr size_t kFFT = 8192;
 
 struct Complex { float re; float im; };
 
@@ -49,9 +54,10 @@ void fft(std::vector<Complex> &a) {
 struct PKChordDetector {
     double sampleRate;
     float gate;
-    std::vector<float> ring;   // last kFFT samples
+    std::vector<float> ring;      // last kFFT samples
     size_t writePos;
     size_t filled;
+    std::vector<Complex> fftBuf;  // reused scratch — no allocation per call
 };
 
 PKChordDetector *pk_chord_detector_create(double sampleRate) {
@@ -61,6 +67,7 @@ PKChordDetector *pk_chord_detector_create(double sampleRate) {
     d->ring.assign(kFFT, 0.0f);
     d->writePos = 0;
     d->filled = 0;
+    d->fftBuf.assign(kFFT, Complex{0.0f, 0.0f});
     return d;
 }
 
@@ -68,6 +75,18 @@ void pk_chord_detector_destroy(PKChordDetector *detector) { delete detector; }
 
 void pk_chord_detector_set_gate(PKChordDetector *detector, float rmsGate) {
     if (detector && rmsGate >= 0.0f) detector->gate = rmsGate;
+}
+
+size_t pk_chord_detector_window(void) { return kFFT; }
+
+void pk_chord_detector_reset(PKChordDetector *detector) {
+    if (!detector) return;
+    // Forget buffered audio so a new target chord starts from a clean window —
+    // otherwise the previous chord dominates the analysis for the whole
+    // window length after a change.
+    detector->writePos = 0;
+    detector->filled = 0;
+    std::fill(detector->ring.begin(), detector->ring.end(), 0.0f);
 }
 
 int pk_chord_detector_chroma(PKChordDetector *detector,
@@ -92,7 +111,7 @@ int pk_chord_detector_chroma(PKChordDetector *detector,
     for (size_t i = 0; i < n; ++i) sumSquares += double(detector->ring[i]) * detector->ring[i];
     if (std::sqrt(sumSquares / double(n)) < detector->gate) return 0;
 
-    std::vector<Complex> buf(n);
+    std::vector<Complex> &buf = detector->fftBuf;
     for (size_t i = 0; i < n; ++i) {
         const double window = 0.5 * (1.0 - std::cos(2.0 * M_PI * double(i) / double(n - 1)));
         buf[i] = {float(detector->ring[(start + i) % kFFT] * window), 0.0f};

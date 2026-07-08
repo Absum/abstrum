@@ -102,6 +102,7 @@ final class ChordChangeViewModel {
         changes += 1
         index += 1
         holdFrames = 0
+        chordEngine?.reset()   // new target: don't blend the old chord's tail
         justMatched = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
             self?.justMatched = false

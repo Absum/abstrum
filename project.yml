@@ -76,6 +76,7 @@ targets:
       - path: Abstrum/Songs/Song.swift
       - path: Abstrum/Highway/TabImport.swift
       - path: Abstrum/Audio/ToneSynth.swift
+      - path: Abstrum/Audio/AudioSettings.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

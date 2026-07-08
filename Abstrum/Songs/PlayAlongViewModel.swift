@@ -139,6 +139,7 @@ final class PlayAlongViewModel {
         beatInBar = 0
         currentBarHit = false
         holdFrames = 0
+        chordEngine?.reset()   // new bar's chord: don't blend the old one's tail
         barIndex += 1
         if barIndex >= bars.count {
             if loop { barIndex = 0; hits = 0; currentBarHit = false }

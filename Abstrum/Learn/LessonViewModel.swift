@@ -197,6 +197,7 @@ final class LessonViewModel {
         detectedLabel = nil
         holdFrames = 0; stepMisses = 0; runQualitySum = 0; runStepCount = 0
         strumRunning = false; strumFinished = false; strumHits = 0; strumBeat = 0; hitBeats = []
+        chordEngine?.reset()   // back to the first target — start from clean audio
     }
 
     /// Score a chord step from the chroma (runs the FFT off the main thread).
@@ -263,6 +264,7 @@ final class LessonViewModel {
         strumFinished = false; strumBeat = 0; strumHits = 0; hitBeats = []
         if currentIndex + 1 < lesson.steps.count {
             currentIndex += 1
+            chordEngine?.reset()   // new target: don't blend the old chord's tail
         } else {
             isComplete = true
             lastRunScore = runStepCount > 0 ? runQualitySum / Double(runStepCount) : 1

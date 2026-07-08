@@ -82,16 +82,31 @@ extension Chord {
 }
 
 enum ChordMatcher {
+    /// A plucked string's 3rd harmonic lands a fifth up and its 5th harmonic a
+    /// major third up from the fundamental's pitch class. Modeling that in the
+    /// template (instead of a binary tone set) means real guitar spectra score
+    /// higher against the chord actually played — and the root's 5th-harmonic
+    /// bleed onto the major third no longer favours major over minor.
+    private static let harmonicFifthWeight = 0.25   // 3rd harmonic → +7 semitones
+    private static let harmonicThirdWeight = 0.15   // 5th harmonic → +4 semitones
+
+    /// Cosine similarity between the chroma and the chord's weighted template.
     static func score(chroma: [Float], pitchClasses: Set<Int>) -> Double {
         guard chroma.count == 12, !pitchClasses.isEmpty else { return 0 }
-        var dot = 0.0
-        var energy = 0.0
+        var template = [Double](repeating: 0, count: 12)
+        for pc in pitchClasses {
+            template[pc] += 1.0
+            template[(pc + 7) % 12] += harmonicFifthWeight
+            template[(pc + 4) % 12] += harmonicThirdWeight
+        }
+        var dot = 0.0, chromaEnergy = 0.0, templateEnergy = 0.0
         for i in 0..<12 {
             let c = Double(chroma[i])
-            energy += c * c
-            if pitchClasses.contains(i) { dot += c }
+            dot += c * template[i]
+            chromaEnergy += c * c
+            templateEnergy += template[i] * template[i]
         }
-        let denom = energy.squareRoot() * Double(pitchClasses.count).squareRoot()
+        let denom = (chromaEnergy * templateEnergy).squareRoot()
         return denom > 0 ? dot / denom : 0
     }
 

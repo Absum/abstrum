@@ -17,6 +17,12 @@ final class ChordEngine {
         if let detector { pk_chord_detector_destroy(detector) }
     }
 
+    /// Forget buffered audio — call when the target chord changes so the old
+    /// chord's tail doesn't blend into the new target's analysis window.
+    func reset() {
+        if let detector { pk_chord_detector_reset(detector) }
+    }
+
     /// A normalized 12-bin chromagram, or nil when there isn't enough signal.
     func chroma(_ samples: [Float]) -> [Float]? {
         guard let detector else { return nil }
