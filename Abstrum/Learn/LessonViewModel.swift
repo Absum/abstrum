@@ -59,7 +59,10 @@ final class LessonViewModel {
         audio.onResult = { [weak self] in self?.handle($0) }
         audio.onSamples = { [weak self] samples, rate in self?.handleChroma(samples, sampleRate: rate) }
         audio.onOnset = { [weak self] _ in self?.registerStrum() }
-        if lesson.steps.contains(where: { $0.strum != nil }) { audio.enableClickPlayback = true }
+        // Full-duplex for every lesson (not just strum steps): "hear it"
+        // examples then play over the open mic — detection is paused for the
+        // duration instead of tearing the capture engine down and back up.
+        audio.enableClickPlayback = true
     }
 
     /// Which beats the player has landed (for the beat indicator).
@@ -105,6 +108,8 @@ final class LessonViewModel {
     func stopListening() {
         clock?.invalidate(); clock = nil
         strumRunning = false
+        audio.suspended = false
+        player.stop()
         audio.stop()
     }
 
@@ -177,15 +182,28 @@ final class LessonViewModel {
         }
     }
 
-    /// Play the target note as an example; pause the mic during playback.
+    /// Play the target note as an example. If the mic is capturing, detection
+    /// pauses (so the example isn't scored) and resumes the instant it ends —
+    /// the capture engine and audio session stay up throughout.
     func playExample() {
-        audio.stop()
-        player.onFinished = { [weak self] in self?.startListening() }
+        if audio.isRunning {
+            audio.suspended = true
+            holdFrames = 0
+            feedback = .waiting
+            player.onFinished = { [weak self] in self?.resumeDetection() }
+        } else {
+            player.onFinished = { [weak self] in self?.startListening() }
+        }
         if let chord = currentStep.chord {
             player.playChord(chord.frequencies)
         } else {
             player.playNote(currentStep.frequency)
         }
+    }
+
+    private func resumeDetection() {
+        chordEngine?.reset()   // drop pre-example audio from the analysis window
+        audio.suspended = false
     }
 
     func restart() {

@@ -26,6 +26,10 @@ final class AudioEngine {
     /// Run full-duplex (.playAndRecord) so a metronome click can play while the
     /// mic is capturing — used by chord-change practice.
     var enableClickPlayback = false
+    /// While true, captured buffers are dropped before any detection — used
+    /// during example playback so the synth isn't scored, without tearing the
+    /// capture engine (and the audio session) down and back up.
+    var suspended = false
 
     private let engine = AVAudioEngine()
     private var pitch: PitchEngine?
@@ -71,8 +75,9 @@ final class AudioEngine {
             let clickFormat = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
             if !clickAttached { engine.attach(clickPlayer); clickAttached = true }
             engine.connect(clickPlayer, to: engine.mainMixerNode, format: clickFormat)
-            accentClick = Self.makeClick(frequency: 1760, format: clickFormat)
-            normalClick = Self.makeClick(frequency: 1200, format: clickFormat)
+            // Soft attack: the mic is open, so the click must not read as a pluck.
+            accentClick = ClickSynth.makeClick(frequency: 1760, format: clickFormat, softAttack: true)
+            normalClick = ClickSynth.makeClick(frequency: 1200, format: clickFormat, softAttack: true)
         }
 
         engine.prepare()
@@ -88,23 +93,6 @@ final class AudioEngine {
         }
     }
 
-    private static func makeClick(frequency: Double, format: AVAudioFormat) -> AVAudioPCMBuffer {
-        let sampleRate = format.sampleRate
-        let frames = AVAudioFrameCount(sampleRate * 0.05)
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames)!
-        buffer.frameLength = frames
-        let samples = buffer.floatChannelData![0]
-        for i in 0..<Int(frames) {
-            let t = Double(i) / sampleRate
-            // Soft (4 ms raised-cosine) attack: avoids a broadband click transient
-            // so the band-limited onset detector won't mistake it for a pluck.
-            let attack = min(1.0, t / 0.004)
-            let env = 0.5 * (1.0 - cos(.pi * attack))
-            samples[i] = Float(sin(2.0 * .pi * frequency * t) * exp(-t * 35.0) * env * 0.5)
-        }
-        return buffer
-    }
-
     func stop() {
         guard engine.isRunning else { return }
         engine.inputNode.removeTap(onBus: 0)
@@ -114,6 +102,7 @@ final class AudioEngine {
     }
 
     private func process(_ buffer: AVAudioPCMBuffer) {
+        guard !suspended else { return }   // example playing — don't score it
         guard let channelData = buffer.floatChannelData else { return }
         let count = Int(buffer.frameLength)
         guard count > 0 else { return }

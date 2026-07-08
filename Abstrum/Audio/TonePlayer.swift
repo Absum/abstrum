@@ -27,11 +27,19 @@ final class TonePlayer {
     /// Start the audio session + engine ahead of time so the first note doesn't
     /// glitch while the engine spins up. Call during a lead-in.
     func warmUp() {
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, mode: .default, options: [])
-        try? session.setActive(true)
+        configureSessionIfNeeded()
         if !engine.isRunning { try? engine.start() }
         if !player.isPlaying { player.play() }
+    }
+
+    /// Claim a playback session — unless a full-duplex (.playAndRecord) session
+    /// is already live, i.e. the lesson mic is capturing: playback works over it
+    /// and re-configuring would glitch or kill the capture.
+    private func configureSessionIfNeeded() {
+        let session = AVAudioSession.sharedInstance()
+        guard session.category != .playAndRecord else { return }
+        try? session.setCategory(.playback, mode: .default, options: [])
+        try? session.setActive(true)
     }
 
     func stop() {
@@ -47,9 +55,7 @@ final class TonePlayer {
         // Cold start only — once running we just schedule buffers, so a sequence
         // (song preview) doesn't churn the session or reset the player per note.
         if !engine.isRunning {
-            let session = AVAudioSession.sharedInstance()
-            try? session.setCategory(.playback, mode: .default, options: [])
-            try? session.setActive(true)
+            configureSessionIfNeeded()
             try? engine.start()
         }
 
