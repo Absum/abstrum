@@ -26,6 +26,8 @@ final class ChordEngine {
     /// A normalized 12-bin chromagram, or nil when there isn't enough signal.
     func chroma(_ samples: [Float]) -> [Float]? {
         guard let detector else { return nil }
+        // Re-push the gate so dev-panel changes apply live, like the other knobs.
+        pk_chord_detector_set_gate(detector, AudioSettings.shared.inputGateRMS)
         var out = [Float](repeating: 0, count: 12)
         let ok = samples.withUnsafeBufferPointer { input in
             out.withUnsafeMutableBufferPointer { output in
