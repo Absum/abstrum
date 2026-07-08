@@ -13,12 +13,20 @@ final class TonePlayer {
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
+    private let reverb = AVAudioUnitReverb()
     private let sampleRate = 44_100.0
 
     init() {
         let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
         engine.attach(player)
-        engine.connect(player, to: engine.mainMixerNode, format: format)
+        engine.attach(reverb)
+        // A touch of room so the synth voice isn't clinically dry. Kept subtle:
+        // the dry reference tone must dominate for ear training, and reverb
+        // doesn't alter pitch.
+        reverb.loadFactoryPreset(.mediumRoom)
+        reverb.wetDryMix = 16
+        engine.connect(player, to: reverb, format: format)
+        engine.connect(reverb, to: engine.mainMixerNode, format: format)
     }
 
     func playNote(_ frequency: Double) { play([frequency], strumDelay: 0) }

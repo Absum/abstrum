@@ -1,12 +1,19 @@
 //
 //  ToneSynth.swift
-//  Plucked-string synthesis (Karplus–Strong) for "hear it" examples.
+//  Plucked-string synthesis (extended Karplus–Strong) for "hear it" examples:
+//  pitch-seeded excitation, pick-position comb, and a small resonant "body".
+//  All sound is original and generated in code — no audio assets, by decision.
 //  Pure sample generation — no audio framework — so it's easy to test.
 //
 
 import Foundation
 
 enum ToneSynth {
+    /// Where along the string the "pick" strikes (fraction of string length).
+    /// The comb this creates in the excitation is what makes an attack read
+    /// as *picked* rather than plucked-rubber-band.
+    private static let pickPosition = 0.13
+
     /// Karplus–Strong plucked-string samples for one note.
     static func pluck(frequency: Double, sampleRate: Double, length: Int, decay: Float = 0.996) -> [Float] {
         guard frequency > 0, length > 0, sampleRate > 0 else { return [] }
@@ -28,6 +35,13 @@ enum ToneSynth {
         // Low-pass the excitation burst so the attack isn't a harsh broadband click.
         let raw = ring
         for i in 0..<n { ring[i] = 0.5 * (raw[i] + raw[(i + 1) % n]) }
+        // Pick-position comb (Jaffe–Smith): striking the string at
+        // `pickPosition` suppresses the harmonics with a node there.
+        let pickOffset = max(1, Int((Double(n) * pickPosition).rounded()))
+        if pickOffset < n {
+            let combed = ring
+            for i in 0..<n { ring[i] = combed[i] - combed[(i + pickOffset) % n] }
+        }
         var out = [Float](repeating: 0, count: length)
         var index = 0
         for i in 0..<length {
@@ -40,7 +54,7 @@ enum ToneSynth {
     }
 
     /// Mix several plucked notes with an optional strum stagger; returns
-    /// normalized mono samples with a short fade-out.
+    /// normalized mono samples with a short fade-out, coloured by the body.
     static func strum(frequencies: [Double],
                       sampleRate: Double,
                       duration: Double = 1.8,
@@ -52,6 +66,10 @@ enum ToneSynth {
             let note = pluck(frequency: frequency, sampleRate: sampleRate, length: total - onset)
             for j in 0..<note.count { mix[onset + j] += note[j] }
         }
+
+        // A resonant "body" before normalization: the string alone sounds like
+        // a wire; these resonances are the wood.
+        applyBody(&mix, sampleRate: sampleRate)
 
         var peak: Float = 0
         for value in mix { peak = max(peak, abs(value)) }
@@ -65,5 +83,37 @@ enum ToneSynth {
             mix[i] = sample
         }
         return mix
+    }
+
+    // MARK: - Body resonance (pure code — no impulse-response asset)
+
+    /// Two peaking filters approximating an acoustic guitar's main air and
+    /// top-plate resonances. Applied in place, before normalization.
+    private static func applyBody(_ samples: inout [Float], sampleRate: Double) {
+        peakingFilter(&samples, sampleRate: sampleRate, frequency: 110, q: 1.1, gainDB: 5.0)
+        peakingFilter(&samples, sampleRate: sampleRate, frequency: 225, q: 1.4, gainDB: 3.5)
+    }
+
+    /// RBJ-cookbook peaking EQ biquad, direct form I, in place.
+    private static func peakingFilter(_ samples: inout [Float], sampleRate: Double,
+                                      frequency: Double, q: Double, gainDB: Double) {
+        let a = pow(10.0, gainDB / 40.0)
+        let w0 = 2.0 * Double.pi * frequency / sampleRate
+        let alpha = sin(w0) / (2.0 * q)
+        let cosw0 = cos(w0)
+        let a0 = 1.0 + alpha / a
+        let b0 = Float((1.0 + alpha * a) / a0)
+        let b1 = Float(-2.0 * cosw0 / a0)
+        let b2 = Float((1.0 - alpha * a) / a0)
+        let a1 = Float(-2.0 * cosw0 / a0)
+        let a2 = Float((1.0 - alpha / a) / a0)
+        var x1: Float = 0, x2: Float = 0, y1: Float = 0, y2: Float = 0
+        for i in 0..<samples.count {
+            let x = samples[i]
+            let y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
+            x2 = x1; x1 = x
+            y2 = y1; y1 = y
+            samples[i] = y
+        }
     }
 }

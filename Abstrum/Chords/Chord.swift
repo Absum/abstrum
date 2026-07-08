@@ -88,7 +88,12 @@ enum ChordMatcher {
     /// higher against the chord actually played — and the root's 5th-harmonic
     /// bleed onto the major third no longer favours major over minor.
     private static let harmonicFifthWeight = 0.25   // 3rd harmonic → +7 semitones
-    private static let harmonicThirdWeight = 0.15   // 5th harmonic → +4 semitones
+    // Tuned against synthesized strums of every beginner chord: real plucked
+    // audio carries strong 5th-harmonic (major-third) bleed from each root, so
+    // the template must EXPECT it — under-crediting it makes sparse minor
+    // voicings (Dm, Am) read as their major rival, since the major template
+    // absorbs that bleed as a chord tone either way.
+    private static let harmonicThirdWeight = 0.20   // 5th harmonic → +4 semitones
 
     /// Cosine similarity between the chroma and the chord's weighted template.
     static func score(chroma: [Float], pitchClasses: Set<Int>) -> Double {
