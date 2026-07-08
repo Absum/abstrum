@@ -104,6 +104,13 @@ final class PitchDetectorTests: XCTestCase {
         XCTAssertNil(detect(silence), "Silence should not yield a pitch")
     }
 
+    func testAboveRangeToneIsRejectedNotAliased() {
+        // A periodic tone above the plausible guitar range (kMaxFreq = 2000 Hz)
+        // must report NO pitch — not lock onto its 2x period and misreport an
+        // octave down. Locks the deliberate low-tau search + range-check design.
+        XCTAssertNil(detect(sine(2500)), "2.5 kHz tone must not alias to 1250 Hz")
+    }
+
     func testLowAmplitudeNoiseReportsNoPitch() {
         // White-ish noise below the RMS gate.
         var seed: UInt64 = 0x1234_5678

@@ -4,6 +4,8 @@
 #include <cmath>
 #include <vector>
 
+#include "pk_fft.h"
+
 // Spectral-flux onset detection. Each hop we take a Hann-windowed FFT of the
 // most recent window and sum the positive magnitude change since the previous
 // frame, but only across the guitar band — that ignores the metronome click
@@ -26,33 +28,7 @@ constexpr int kWarmupHops = 8;        // settle the threshold before reporting
 constexpr double kMinBandFraction = 0.20;  // ≥20% of energy must be in-band, so
                                            // high tones/clicks can't trigger
 
-struct Complex { float re; float im; };
-
-// Iterative radix-2 Cooley–Tukey FFT, in place. size must be a power of two.
-void fft(std::vector<Complex> &a) {
-    const size_t n = a.size();
-    for (size_t i = 1, j = 0; i < n; ++i) {
-        size_t bit = n >> 1;
-        for (; j & bit; bit >>= 1) j ^= bit;
-        j ^= bit;
-        if (i < j) std::swap(a[i], a[j]);
-    }
-    for (size_t len = 2; len <= n; len <<= 1) {
-        const double ang = -2.0 * M_PI / double(len);
-        const Complex wlen{float(std::cos(ang)), float(std::sin(ang))};
-        for (size_t i = 0; i < n; i += len) {
-            Complex w{1.0f, 0.0f};
-            for (size_t k = 0; k < len / 2; ++k) {
-                const Complex u = a[i + k];
-                const Complex t = a[i + k + len / 2];
-                const Complex v{t.re * w.re - t.im * w.im, t.re * w.im + t.im * w.re};
-                a[i + k] = {u.re + v.re, u.im + v.im};
-                a[i + k + len / 2] = {u.re - v.re, u.im - v.im};
-                w = {w.re * wlen.re - w.im * wlen.im, w.re * wlen.im + w.im * wlen.re};
-            }
-        }
-    }
-}
+using pk::Complex;
 
 }  // namespace
 
@@ -73,6 +49,7 @@ struct PKOnsetDetector {
     int hopsSinceOnset;
     int hopsSeen;
     long long frames;                // total samples consumed
+    std::vector<Complex> fftBuf;     // reused scratch — no allocation per hop
 };
 
 PKOnsetDetector *pk_onset_detector_create(double sampleRate) {
@@ -100,6 +77,7 @@ PKOnsetDetector *pk_onset_detector_create(double sampleRate) {
     d->hopsSinceOnset = kRefractoryHops;
     d->hopsSeen = 0;
     d->frames = 0;
+    d->fftBuf.assign(kWindow, Complex{0.0f, 0.0f});
     return d;
 }
 
@@ -121,7 +99,7 @@ float analyze(PKOnsetDetector *d, bool &onset) {
     onset = false;
 
     // Copy the ring into time order (oldest first) and apply the Hann window.
-    std::vector<Complex> buf(kWindow);
+    std::vector<Complex> &buf = d->fftBuf;
     double sumSq = 0.0;
     for (size_t i = 0; i < kWindow; ++i) {
         const float s = d->ring[(d->writePos + i) % kWindow];
@@ -130,7 +108,7 @@ float analyze(PKOnsetDetector *d, bool &onset) {
     }
     const float rms = float(std::sqrt(sumSq / double(kWindow)));
 
-    fft(buf);
+    pk::fft(buf);
 
     // Positive spectral flux within the guitar band only, plus a check that the
     // energy actually lives in the band (rejects high tones / the click, whose
