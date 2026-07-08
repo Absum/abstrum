@@ -50,7 +50,7 @@ final class ReminderScheduler {
         let store = ProgressStore.shared
         store.refreshStreak(now)          // streak still tracked for stats
         let practicedToday = store.isActiveToday(now)
-        let msg = Self.message(due: store.dueForReview(on: now).count,
+        let msg = Self.message(due: store.dueForReviewCurrent(on: now).count,
                                skillsLearned: store.completedLessonIDs.count,
                                daysAway: store.daysSinceActive(now))
         let hour = self.hour, minute = self.minute

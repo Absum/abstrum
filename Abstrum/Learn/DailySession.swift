@@ -64,6 +64,8 @@ enum DailySession {
         var used: Set<String> = []
 
         func lesson(_ id: String) -> Lesson? { lessons.first { $0.id == id } }
+        // Stale SRS ids (curriculum resequenced) mustn't eat review-cap slots.
+        let due = due.filter { lesson($0) != nil }
         func add(_ lesson: Lesson, _ phase: SessionPhase) {
             guard !used.contains(lesson.id) else { return }
             used.insert(lesson.id)

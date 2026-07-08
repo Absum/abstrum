@@ -88,7 +88,7 @@ final class TabHighwayViewModel {
     }
 
     func seconds(of note: HighwayNote) -> Double {
-        note.beat * 60.0 / Double(track.bpm) / max(0.25, speed)
+        note.beat * 60.0 / Double(max(1, track.bpm)) / max(0.25, speed)
     }
     private var endTime: Double { (notes.map { seconds(of: $0) }.max() ?? 0) + 1.6 }
 
@@ -198,7 +198,7 @@ final class TabHighwayViewModel {
 
         // Metronome: click on each beat boundary (accent the downbeat). Negative
         // time covers the count-in before the first note arrives.
-        let beatInterval = 60.0 / Double(track.bpm) / max(0.25, speed)
+        let beatInterval = 60.0 / Double(max(1, track.bpm)) / max(0.25, speed)
         let beat = Int(floor(currentTime / beatInterval))
         if beat > lastClickBeat {
             lastClickBeat = beat

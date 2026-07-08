@@ -8,10 +8,15 @@ import SwiftUI
 
 struct LessonView: View {
     @State private var model: LessonViewModel
+    private let onFinished: (() -> Void)?
     private let onClose: () -> Void
 
-    init(lesson: Lesson, onClose: @escaping () -> Void) {
+    /// `onFinished` fires once when a run completes; `onClose` fires on any
+    /// dismissal (completion's DONE or a mid-practice bail via the X) — callers
+    /// that track progress through a session should key off `onFinished`.
+    init(lesson: Lesson, onFinished: (() -> Void)? = nil, onClose: @escaping () -> Void) {
         _model = State(initialValue: LessonViewModel(lesson: lesson))
+        self.onFinished = onFinished
         self.onClose = onClose
     }
 
@@ -27,9 +32,12 @@ struct LessonView: View {
     @State private var audiated = false
     /// Show the audiation primer only while first acquiring a skill (full
     /// scaffold). Once it's reduced/from-memory the learner already hears it.
+    /// Ephemeral drills (tracksProgress == false, e.g. the interleaved mix) are
+    /// reviews of known material — their mastery is always 0, so without this
+    /// check they'd show the primer forever.
     private var needsAudiation: Bool {
         if audiationDisabled { return false }
-        return model.scaffold == .full
+        return model.lesson.tracksProgress && model.scaffold == .full
     }
 
     var body: some View {
@@ -53,6 +61,9 @@ struct LessonView: View {
         }
         .onDisappear { model.stopListening() }
         .onChange(of: model.currentStep.id) { _, _ in peeking = false }   // re-fade each step
+        .onChange(of: model.isComplete) { _, complete in
+            if complete { onFinished?() }
+        }
     }
 
     private func startPracticing() {
@@ -442,7 +453,10 @@ struct LessonView: View {
             Text(model.lesson.title)
                 .font(Theme.body(18)).foregroundStyle(Theme.frost.opacity(0.8))
 
-            masteryReadout.padding(.horizontal, 40).padding(.top, 4)
+            if model.lesson.tracksProgress {
+                // Ephemeral drills (the mix) don't accrue mastery — no bar to show.
+                masteryReadout.padding(.horizontal, 40).padding(.top, 4)
+            }
 
             VStack(spacing: 12) {
                 Button {

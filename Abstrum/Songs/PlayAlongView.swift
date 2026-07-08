@@ -149,17 +149,19 @@ private struct PlayAlongRunner: View {
         .animation(.snappy, value: model.progress)
     }
 
-    private var currentChord: some View {
-        VStack(spacing: 10) {
-            Text(model.current.name)
-                .font(.custom("Rajdhani-SemiBold", size: 96))
-                .foregroundStyle(model.currentBarHit ? Theme.teal : .white)
-                .shadow(color: model.currentBarHit ? Theme.teal.opacity(0.8) : .clear, radius: 22)
-                .contentTransition(.numericText())
-                .animation(.snappy, value: model.current.id)
-            FretboardDiagram(positions: model.current.positions,
-                             mutedStrings: model.current.mutedStrings, barre: model.current.barre)
-                .frame(width: FretboardDiagram.practiceWidth, height: FretboardDiagram.practiceHeight)
+    @ViewBuilder private var currentChord: some View {
+        if let chord = model.current {
+            VStack(spacing: 10) {
+                Text(chord.name)
+                    .font(.custom("Rajdhani-SemiBold", size: 96))
+                    .foregroundStyle(model.currentBarHit ? Theme.teal : .white)
+                    .shadow(color: model.currentBarHit ? Theme.teal.opacity(0.8) : .clear, radius: 22)
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: chord.id)
+                FretboardDiagram(positions: chord.positions,
+                                 mutedStrings: chord.mutedStrings, barre: chord.barre)
+                    .frame(width: FretboardDiagram.practiceWidth, height: FretboardDiagram.practiceHeight)
+            }
         }
     }
 

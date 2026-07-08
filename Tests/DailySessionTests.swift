@@ -65,6 +65,21 @@ final class DailySessionTests: XCTestCase {
         XCTAssertEqual(ids.count, Set(ids).count)
     }
 
+    func testStaleDueIDsDoNotEatReviewSlots() {
+        // SRS entries can reference lessons removed in a resequencing; they must
+        // neither appear nor consume the review cap.
+        let plan = DailySession.plan(completed: throughOpenChords,
+                                     due: ["ghost-1", "ghost-2", "ghost-3", "chord-em"],
+                                     maxReviews: 3)
+        let reviews = plan.filter { $0.phase == .review }.map { $0.lesson.id }
+        XCTAssertEqual(reviews, ["chord-em"])   // survives despite three stale ids ahead of it
+    }
+
+    func testLessonIDLookupCoversTheWholeLibrary() {
+        XCTAssertEqual(LessonLibrary.byID.count, LessonLibrary.all.count)   // ids are unique
+        XCTAssertNil(LessonLibrary.byID["ghost"])
+    }
+
     func testSongClassification() {
         XCTAssertTrue(DailySession.isSong(LessonLibrary.firstSong))    // strummed Em-C-G-D
         XCTAssertTrue(DailySession.isSong(LessonLibrary.spiralGCD))    // strummed G-C-D

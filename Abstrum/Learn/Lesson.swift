@@ -289,6 +289,22 @@ enum LessonLibrary {
                                 minorPentatonic, pentatonicRun, firstLick,
                                 pentatonicBox1, box1Lick, majorScaleG, fingerIndependence]
 
+    /// Fast id → lesson lookup. Progress/SRS data can reference ids that no
+    /// longer exist after a curriculum resequencing — always resolve through
+    /// this (and drop unknowns) rather than assuming an id is current.
+    static let byID: [String: Lesson] = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+}
+
+extension ProgressStore {
+    /// The due-for-review queue restricted to lessons that still exist in the
+    /// current curriculum — what every user-facing count/list should show.
+    /// (The store keeps stale ids so progress survives resequencing.)
+    func dueForReviewCurrent(on date: Date = Date()) -> [String] {
+        dueForReview(on: date).filter { LessonLibrary.byID[$0] != nil }
+    }
+}
+
+extension LessonLibrary {
     // MARK: - Step builders
 
     private static func chord(_ id: String) -> Chord? { ChordBank.all.first { $0.id == id } }

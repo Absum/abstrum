@@ -28,7 +28,7 @@ struct LearnHomeView: View {
                         VStack(spacing: 16) {
                             let session = DailySession.today(store)
                             if session.count > 1 { todaysPracticeCard(steps: session.count) }
-                            let dueCount = store.dueForReview().count
+                            let dueCount = store.dueForReviewCurrent().count
                             if dueCount > 0 { dueReviewCard(count: dueCount) }
                             let mixPool = InterleavedDrill.pool(completed: store.completedLessonIDs)
                             if mixPool.count >= InterleavedDrill.minPool { mixCard(poolSize: mixPool.count) }
@@ -61,7 +61,7 @@ struct LearnHomeView: View {
             DailySessionView(items: DailySession.today(store)) { showSession = false }
         }
         .fullScreenCover(isPresented: $showReview) {
-            ReviewSessionView(lessonIDs: store.dueForReview()) { showReview = false }
+            ReviewSessionView(lessonIDs: store.dueForReviewCurrent()) { showReview = false }
         }
         .fullScreenCover(item: $mixLesson) { lesson in
             LessonView(lesson: lesson) { mixLesson = nil }
@@ -141,7 +141,7 @@ struct LearnHomeView: View {
     }
 
     private var competenceStrip: some View {
-        let due = store.dueForReview().count
+        let due = store.dueForReviewCurrent().count
         return Button { showMastery = true } label: {
             HStack(spacing: 0) {
                 stat(icon: "checkmark.seal.fill", value: "\(skillsLearned)", label: "SKILLS", tint: Theme.teal)

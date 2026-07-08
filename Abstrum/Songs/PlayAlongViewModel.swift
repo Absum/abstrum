@@ -43,7 +43,8 @@ final class PlayAlongViewModel {
     }
 
     var bars: [Chord] { song.bars }
-    var current: Chord { bars[min(barIndex, bars.count - 1)] }
+    /// nil when the song has no resolvable bars (bad data) — never index into it.
+    var current: Chord? { bars.isEmpty ? nil : bars[min(barIndex, bars.count - 1)] }
     var nextChord: Chord? { barIndex + 1 < bars.count ? bars[barIndex + 1] : nil }
     /// Fills to full on the last bar so it matches the "BAR x / N" counter;
     /// empty when idle.
@@ -102,6 +103,7 @@ final class PlayAlongViewModel {
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard granted else { self.permissionDenied = true; return }
+                guard !self.bars.isEmpty else { return }   // bad song data — don't start
                 do { try self.audio.start() } catch { return }
                 self.barIndex = 0; self.beatInBar = 0; self.hits = 0
                 self.currentBarHit = false; self.holdFrames = 0; self.finished = false
@@ -157,8 +159,9 @@ final class PlayAlongViewModel {
         if chordEngine == nil { chordEngine = ChordEngine(sampleRate: sampleRate) }
         let chroma = chordEngine?.chroma(samples)
         DispatchQueue.main.async { [weak self] in
-            guard let self, self.isPlaying, !self.currentBarHit, let chroma else { return }
-            let score = ChordMatcher.score(chroma: chroma, pitchClasses: self.current.pitchClasses)
+            guard let self, self.isPlaying, !self.currentBarHit, let chroma,
+                  let current = self.current else { return }
+            let score = ChordMatcher.score(chroma: chroma, pitchClasses: current.pitchClasses)
             if score >= self.threshold {
                 self.holdFrames += 1
                 if self.holdFrames >= self.holdRequired { self.currentBarHit = true }

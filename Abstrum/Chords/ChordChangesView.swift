@@ -146,22 +146,23 @@ private struct ChordChangeRunner: View {
         String(format: "%d:%02d", model.seconds / 60, model.seconds % 60)
     }
 
-    private var currentChord: some View {
-        let chord = model.current
-        return VStack(spacing: 10) {
-            Text(chord.name)
-                .font(.custom("Rajdhani-SemiBold", size: 80))
-                .foregroundStyle(model.justMatched ? Theme.teal : .white)
-                .shadow(color: model.justMatched ? Theme.teal.opacity(0.8) : .clear, radius: 22)
-                .contentTransition(.numericText())
-                .animation(.snappy, value: chord.id)
-            FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings, barre: chord.barre)
-                .frame(width: FretboardDiagram.practiceWidth, height: FretboardDiagram.practiceHeight)
+    @ViewBuilder private var currentChord: some View {
+        if let chord = model.current {
+            VStack(spacing: 10) {
+                Text(chord.name)
+                    .font(.custom("Rajdhani-SemiBold", size: 80))
+                    .foregroundStyle(model.justMatched ? Theme.teal : .white)
+                    .shadow(color: model.justMatched ? Theme.teal.opacity(0.8) : .clear, radius: 22)
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: chord.id)
+                FretboardDiagram(positions: chord.positions, mutedStrings: chord.mutedStrings, barre: chord.barre)
+                    .frame(width: FretboardDiagram.practiceWidth, height: FretboardDiagram.practiceHeight)
+            }
         }
     }
 
     private var nextHint: some View {
-        Text("NEXT  ·  \(model.nextChord.name)")
+        Text(model.nextChord.map { "NEXT  ·  \($0.name)" } ?? "")
             .font(Theme.title(16)).tracking(3)
             .foregroundStyle(Theme.frost.opacity(0.7))
     }

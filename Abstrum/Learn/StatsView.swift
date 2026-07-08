@@ -55,7 +55,7 @@ struct StatsView: View {
         guard pathTotal > 0 else { return 0 }
         return Int((Double(skillsLearned) / Double(pathTotal) * 100).rounded())
     }
-    private var dueCount: Int { store.dueForReview().count }
+    private var dueCount: Int { store.dueForReviewCurrent().count }
 
     private var competenceHero: some View {
         VStack(spacing: 6) {

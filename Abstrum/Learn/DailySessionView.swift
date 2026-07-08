@@ -35,10 +35,11 @@ struct DailySessionView: View {
         }
         .preferredColorScheme(.dark)
         .fullScreenCover(item: $activeItem) { item in
-            LessonView(lesson: item.lesson) {
-                doneItems.insert(item.id)
-                activeItem = nil
-            }
+            // Only a completed run checks the step off — bailing out with the X
+            // leaves it on the list (onClose fires for both, onFinished doesn't).
+            LessonView(lesson: item.lesson,
+                       onFinished: { doneItems.insert(item.id) },
+                       onClose: { activeItem = nil })
         }
     }
 

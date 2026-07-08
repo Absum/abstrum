@@ -38,8 +38,9 @@ final class ChordChangeViewModel {
     }
 
     var chords: [Chord] { progression.chords }
-    var current: Chord { chords[index % max(1, chords.count)] }
-    var nextChord: Chord { chords[(index + 1) % max(1, chords.count)] }
+    /// nil when the progression has no resolvable chords (bad data).
+    var current: Chord? { chords.isEmpty ? nil : chords[index % chords.count] }
+    var nextChord: Chord? { chords.isEmpty ? nil : chords[(index + 1) % chords.count] }
 
     func toggle() { isRunning ? stop() : start() }
 
@@ -48,6 +49,7 @@ final class ChordChangeViewModel {
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard granted else { self.permissionDenied = true; return }
+                guard !self.chords.isEmpty else { return }   // bad progression data
                 do { try self.audio.start() } catch { return }
                 self.isRunning = true
                 self.startTimers()
@@ -84,9 +86,9 @@ final class ChordChangeViewModel {
         if chordEngine == nil { chordEngine = ChordEngine(sampleRate: sampleRate) }
         let chroma = chordEngine?.chroma(samples)
         DispatchQueue.main.async { [weak self] in
-            guard let self, self.isRunning else { return }
+            guard let self, self.isRunning, let current = self.current else { return }
             guard let chroma else { self.holdFrames = 0; return }
-            let score = ChordMatcher.score(chroma: chroma, pitchClasses: self.current.pitchClasses)
+            let score = ChordMatcher.score(chroma: chroma, pitchClasses: current.pitchClasses)
             if score >= self.threshold {
                 self.holdFrames += 1
                 if self.holdFrames >= self.holdRequired { self.advance() }
