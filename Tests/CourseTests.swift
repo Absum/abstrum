@@ -109,7 +109,7 @@ final class CourseTests: XCTestCase {
 
     func testTier5IntermediateContent() {
         XCTAssertFalse(CourseLibrary.intermediate.comingSoon)
-        XCTAssertEqual(CourseLibrary.intermediate.lessons.count, 4)
+        XCTAssertEqual(CourseLibrary.intermediate.lessons.count, 6)
         // Gated on the end of Tier 4 lead.
         XCTAssertEqual(LessonLibrary.fingerstyleThumb.prerequisite, "first-lick")
         // Fingerstyle intro is pure single-note content.

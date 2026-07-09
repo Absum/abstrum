@@ -410,6 +410,17 @@ enum LessonLibrary {
         subtitle: "Hear the rhythm you just strummed", tier: 2, prerequisite: "strum-keep",
         steps: [], ear: EarDrillSpec(kind: .rhythms([0, 1, 2]), questionCount: 6))
 
+    // Practical theory (Tier 5) — quiz lessons over the curated theory sets.
+    static let theoryNumbers = Lesson(
+        id: "theory-numbers", title: "The Number System",
+        subtitle: "I, IV, V — why every jam makes sense", tier: 5, prerequisite: "full-slow-blues",
+        steps: [], ear: EarDrillSpec(kind: .theory("number-system-g"), questionCount: 6))
+
+    static let theoryFamilies = Lesson(
+        id: "theory-families", title: "Chord Families",
+        subtitle: "Which chords live in a key — and why", tier: 5, prerequisite: "theory-numbers",
+        steps: [], ear: EarDrillSpec(kind: .theory("chord-families"), questionCount: 5))
+
     /// Full 12-bar slow blues in E with 7th voicings.
     static let fullSlowBlues = Lesson(
         id: "full-slow-blues", title: "Full Song: Slow Blues in E",
@@ -452,7 +463,7 @@ enum LessonLibrary {
                                 palmMute, fasterStrum, sixteenths, spiralBarreMix,
                                 minorPentatonic, pentatonicRun, firstLick,
                                 pentatonicBox1, box1Lick, majorScaleG, fingerIndependence,
-                                fingerstyleThumb, fingerstyleArp, fullWaterWide, fullSlowBlues,
+                                fingerstyleThumb, fingerstyleArp, fullWaterWide, fullSlowBlues, theoryNumbers, theoryFamilies,
                                 earIntervals1, earIntervals2, earQuality1, earQuality2, earRhythm1, earRhythm2]
 
     /// Fast id → lesson lookup. Progress/SRS data can reference ids that no
@@ -631,7 +642,8 @@ enum CourseLibrary {
         id: "intermediate", title: "Intermediate",
         subtitle: "Tier 5 · Fingerstyle & full songs", tier: 5,
         lessons: [LessonLibrary.fingerstyleThumb, LessonLibrary.fingerstyleArp,
-                  LessonLibrary.fullWaterWide, LessonLibrary.fullSlowBlues])
+                  LessonLibrary.fullWaterWide, LessonLibrary.fullSlowBlues,
+                  LessonLibrary.theoryNumbers, LessonLibrary.theoryFamilies])
 
     /// Listen-and-answer musicianship — a parallel track (no mic needed), so
     /// ears grow alongside hands from Tier 1 onward.
