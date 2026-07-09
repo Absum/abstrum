@@ -31,6 +31,17 @@ final class TonePlayer {
 
     func playNote(_ frequency: Double) { play([frequency], strumDelay: 0) }
     func playChord(_ frequencies: [Double]) { play(frequencies, strumDelay: 0.028) }
+    /// Notes one after another (interval / arpeggio prompts) — the strum path
+    /// with a gap long enough to hear each note separately.
+    func playSequence(_ frequencies: [Double], gap: Double = 0.75) {
+        let duration = gap * Double(max(0, frequencies.count - 1)) + 1.6
+        playSamples(ToneSynth.strum(frequencies: frequencies, sampleRate: sampleRate,
+                                    duration: duration, strumDelay: gap))
+    }
+    /// A rhythm prompt: ticks at beat offsets.
+    func playRhythm(beatOffsets: [Double], bpm: Int) {
+        playSamples(ToneSynth.rhythm(beatOffsets: beatOffsets, bpm: bpm, sampleRate: sampleRate))
+    }
 
     /// Start the audio session + engine ahead of time so the first note doesn't
     /// glitch while the engine spins up. Call during a lead-in.
@@ -57,8 +68,11 @@ final class TonePlayer {
 
     private func play(_ frequencies: [Double], strumDelay: Double) {
         guard !frequencies.isEmpty else { return }
-        let samples = ToneSynth.strum(frequencies: frequencies, sampleRate: sampleRate, strumDelay: strumDelay)
-        guard let buffer = makeBuffer(samples) else { return }
+        playSamples(ToneSynth.strum(frequencies: frequencies, sampleRate: sampleRate, strumDelay: strumDelay))
+    }
+
+    private func playSamples(_ samples: [Float]) {
+        guard !samples.isEmpty, let buffer = makeBuffer(samples) else { return }
 
         // Cold start only — once running we just schedule buffers, so a sequence
         // (song preview) doesn't churn the session or reset the player per note.

@@ -38,7 +38,7 @@ struct CourseDetailView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(item: $activeLesson) { lesson in
-            LessonView(lesson: lesson) { activeLesson = nil }
+            LessonPlayer(lesson: lesson) { activeLesson = nil }
         }
         .onAppear {
             #if DEBUG

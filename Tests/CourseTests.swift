@@ -8,7 +8,7 @@ import XCTest
 final class CourseTests: XCTestCase {
 
     func testCoursesExist() {
-        XCTAssertEqual(CourseLibrary.all.count, 8)   // all 8 playable — no placeholders left
+        XCTAssertEqual(CourseLibrary.all.count, 9)   // all playable — incl. the Ear Training track
         XCTAssertEqual(CourseLibrary.firstContact.lessons.count, 3)
         XCTAssertEqual(CourseLibrary.firstNotes.lessons.count, 2)
         XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 9)   // Em Am, song, E A D G C Dm

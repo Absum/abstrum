@@ -64,7 +64,7 @@ struct LearnHomeView: View {
             ReviewSessionView(lessonIDs: store.dueForReviewCurrent()) { showReview = false }
         }
         .fullScreenCover(item: $mixLesson) { lesson in
-            LessonView(lesson: lesson) { mixLesson = nil }
+            LessonPlayer(lesson: lesson) { mixLesson = nil }
         }
         .sheet(isPresented: $showMastery) { MasteryView { showMastery = false } }
         .sheet(isPresented: $showStats) { StatsView { showStats = false } }

@@ -44,7 +44,7 @@ struct ReviewSessionView: View {
         }
         .preferredColorScheme(.dark)
         .fullScreenCover(item: $activeLesson) { lesson in
-            LessonView(lesson: lesson) {
+            LessonPlayer(lesson: lesson) {
                 // A completed run pushes the next review out, so it's no longer
                 // due today; a bail-out leaves it due and still on the queue.
                 if !store.isDueForReview(lesson.id) { reviewedIDs.insert(lesson.id) }

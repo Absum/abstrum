@@ -70,6 +70,7 @@ targets:
       - path: Abstrum/Learn/Scaffold.swift
       - path: Abstrum/Learn/DailySession.swift
       - path: Abstrum/Learn/InterleavedDrill.swift
+      - path: Abstrum/Learn/EarTraining.swift
       - path: Abstrum/Learn/ReminderScheduler.swift
       - path: Abstrum/Chords/Chord.swift
       - path: Abstrum/Chords/ChordVariants.swift

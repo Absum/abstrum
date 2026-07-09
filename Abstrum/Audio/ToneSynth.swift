@@ -85,6 +85,25 @@ enum ToneSynth {
         return mix
     }
 
+    /// A rhythm prompt: short damped ticks at the given beat offsets.
+    static func rhythm(beatOffsets: [Double], bpm: Int, sampleRate: Double) -> [Float] {
+        guard !beatOffsets.isEmpty, bpm > 0, sampleRate > 0 else { return [] }
+        let beat = 60.0 / Double(max(1, bpm))
+        let total = max(1, Int(sampleRate * ((beatOffsets.max() ?? 0) * beat + 0.6)))
+        var mix = [Float](repeating: 0, count: total)
+        for offset in beatOffsets {
+            let start = min(total - 1, Int(offset * beat * sampleRate))
+            let length = min(total - start, Int(sampleRate * 0.14))
+            let tick = pluck(frequency: 440, sampleRate: sampleRate, length: length, decay: 0.90)
+            for j in 0..<tick.count { mix[start + j] += tick[j] }
+        }
+        var peak: Float = 0
+        for value in mix { peak = max(peak, abs(value)) }
+        let scale = peak > 0 ? 0.7 / peak : 1
+        for i in 0..<total { mix[i] *= scale }
+        return mix
+    }
+
     // MARK: - Body resonance (pure code — no impulse-response asset)
 
     /// Two peaking filters approximating an acoustic guitar's main air and

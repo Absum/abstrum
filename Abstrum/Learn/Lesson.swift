@@ -66,6 +66,9 @@ struct Lesson: Identifiable, Hashable {
     /// ephemeral, generated drills (e.g. the interleaved mix) so they don't
     /// pollute progress with a synthetic lesson id.
     var tracksProgress = true
+    /// When set, this lesson is a listen-and-answer ear drill (no mic, empty
+    /// steps): LessonPlayer routes it to the quiz UI instead of LessonView.
+    var ear: EarDrillSpec? = nil
 }
 
 struct Course: Identifiable, Hashable {
@@ -356,6 +359,20 @@ enum LessonLibrary {
         steps: strumSteps([("C", 85, 4), ("F", 85, 4), ("C", 85, 4), ("Am", 85, 4),
                            ("Dm", 85, 4), ("G", 85, 4), ("C", 85, 4), ("G", 85, 4)]))
 
+    // MARK: - Ear training — listen-and-answer drills (no mic)
+
+    /// Wide intervals first: octave vs fifth vs major third.
+    static let earIntervals1 = Lesson(
+        id: "ear-intervals-1", title: "Big or Small?",
+        subtitle: "Octave, fifth or third — by ear", tier: 2, prerequisite: "chord-am",
+        steps: [], ear: EarDrillSpec(kind: .intervals([12, 7, 4]), questionCount: 8))
+
+    /// Finer distinctions: fifth, fourth, major and minor thirds.
+    static let earIntervals2 = Lesson(
+        id: "ear-intervals-2", title: "Finer Intervals",
+        subtitle: "Fourths and both thirds join in", tier: 2, prerequisite: "ear-intervals-1",
+        steps: [], ear: EarDrillSpec(kind: .intervals([7, 5, 4, 3]), questionCount: 8))
+
     /// Full 12-bar slow blues in E with 7th voicings.
     static let fullSlowBlues = Lesson(
         id: "full-slow-blues", title: "Full Song: Slow Blues in E",
@@ -398,7 +415,8 @@ enum LessonLibrary {
                                 palmMute, fasterStrum, sixteenths, spiralBarreMix,
                                 minorPentatonic, pentatonicRun, firstLick,
                                 pentatonicBox1, box1Lick, majorScaleG, fingerIndependence,
-                                fingerstyleThumb, fingerstyleArp, fullWaterWide, fullSlowBlues]
+                                fingerstyleThumb, fingerstyleArp, fullWaterWide, fullSlowBlues,
+                                earIntervals1, earIntervals2]
 
     /// Fast id → lesson lookup. Progress/SRS data can reference ids that no
     /// longer exist after a curriculum resequencing — always resolve through
@@ -577,10 +595,17 @@ enum CourseLibrary {
         lessons: [LessonLibrary.fingerstyleThumb, LessonLibrary.fingerstyleArp,
                   LessonLibrary.fullWaterWide, LessonLibrary.fullSlowBlues])
 
+    /// Listen-and-answer musicianship — a parallel track (no mic needed), so
+    /// ears grow alongside hands from Tier 1 onward.
+    static let earTraining = Course(
+        id: "ear-training", title: "Ear Training",
+        subtitle: "Tier 2 · Hear it before you play it", tier: 2,
+        lessons: [LessonLibrary.earIntervals1, LessonLibrary.earIntervals2])
+
     /// The full skill-graph map, tier 0 → 5 — every tier now has real content.
     // Chords-first: First Chords sits right after First Contact; First Notes
     // (single-note fretting) is now a parallel side-track ahead of lead work.
-    static let all: [Course] = [firstContact, firstChords, chordChanges, strumming,
+    static let all: [Course] = [firstContact, firstChords, chordChanges, strumming, earTraining,
                                 barreRhythm, firstNotes, leadBasics, intermediate]
 
     static func isUnlocked(_ course: Course, completed: Set<String>) -> Bool {
