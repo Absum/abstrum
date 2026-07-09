@@ -11,8 +11,8 @@ final class CourseTests: XCTestCase {
         XCTAssertEqual(CourseLibrary.all.count, 8)   // 5 playable + 3 coming-soon (tiers 3–5)
         XCTAssertEqual(CourseLibrary.firstContact.lessons.count, 3)
         XCTAssertEqual(CourseLibrary.firstNotes.lessons.count, 2)
-        XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 8)   // Em Am, song, E A D G C
-        XCTAssertEqual(CourseLibrary.chordChanges.lessons.count, 3)
+        XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 9)   // Em Am, song, E A D G C Dm
+        XCTAssertEqual(CourseLibrary.chordChanges.lessons.count, 4)  // + Am↔Dm side branch
         XCTAssertEqual(CourseLibrary.strumming.lessons.count, 4)   // + spiral G–C–D
     }
 
@@ -85,12 +85,24 @@ final class CourseTests: XCTestCase {
         }
         XCTAssertEqual(LessonLibrary.chordA.steps.first?.chord?.id, "A")
         XCTAssertEqual(LessonLibrary.changeEA.steps.compactMap { $0.chord?.id }, ["E", "A", "E", "A"])
-        // Easiest chords come first.
+        // Easiest chords come first; Dm completes the open-chord family last.
         XCTAssertEqual(CourseLibrary.firstChords.lessons.first?.id, "chord-em")
-        XCTAssertEqual(CourseLibrary.firstChords.lessons.last?.id, "chord-c")
+        XCTAssertEqual(CourseLibrary.firstChords.lessons.last?.id, "chord-dm")
         // A 2-chord song lands after the first two chords and gates the rest.
         XCTAssertTrue(CourseLibrary.firstChords.lessons.contains { $0.id == "song-em-am" })
         XCTAssertEqual(LessonLibrary.chordE.prerequisite, "song-em-am")
+    }
+
+    func testDmCompletesTheOpenChordFamily() {
+        // Dm sits at the end of Tier 1 on the mastery spine: it follows C and
+        // gates the Tier-2 changes.
+        XCTAssertEqual(LessonLibrary.chordDm.prerequisite, "chord-c")
+        XCTAssertEqual(LessonLibrary.changeEA.prerequisite, "chord-dm")
+        XCTAssertEqual(LessonLibrary.chordDm.steps.first?.chord?.id, "Dm")
+        // The minor-family change drill alternates Am and Dm as a side branch.
+        XCTAssertEqual(LessonLibrary.changeAmDm.steps.compactMap { $0.chord?.id },
+                       ["Am", "Dm", "Am", "Dm"])
+        XCTAssertEqual(LessonLibrary.changeAmDm.prerequisite, "change-gc")
     }
 
     func testSpiralRevisitsReuseEarlierChords() {

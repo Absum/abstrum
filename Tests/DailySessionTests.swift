@@ -54,9 +54,10 @@ final class DailySessionTests: XCTestCase {
     }
 
     func testNewSkillIsTheFrontierLesson() {
-        // Through chord-c, the next unlocked-but-unlearned lesson is the E↔A change.
+        // Through chord-c, the next unlocked-but-unlearned lesson is Dm (the
+        // last Tier-1 chord, which gates the Tier-2 changes).
         let plan = DailySession.plan(completed: throughOpenChords, due: [])
-        XCTAssertEqual(plan.first { $0.phase == .newSkill }?.lesson.id, "change-ea")
+        XCTAssertEqual(plan.first { $0.phase == .newSkill }?.lesson.id, "chord-dm")
     }
 
     func testNoDuplicateLessonsAcrossPhases() {

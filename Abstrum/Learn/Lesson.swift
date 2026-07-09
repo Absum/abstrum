@@ -148,11 +148,16 @@ enum LessonLibrary {
         id: "chord-c", title: "The C Chord", subtitle: "A classic open chord, trickiest of the set",
         tier: 1, prerequisite: "chord-g", steps: chordSteps(["C", "C", "C"]))
 
+    // Completes the open-chord family: Em Am E A D G C + Dm.
+    static let chordDm = Lesson(
+        id: "chord-dm", title: "The D Minor Chord", subtitle: "The D shape with a sadder face",
+        tier: 1, prerequisite: "chord-c", steps: chordSteps(["Dm", "Dm", "Dm"]))
+
     // MARK: - Tier 2 — chord transitions (alternating chord steps)
 
     static let changeEA = Lesson(
         id: "change-ea", title: "E ↔ A", subtitle: "Switch cleanly between E and A",
-        tier: 2, prerequisite: "chord-c", steps: chordSteps(["E", "A", "E", "A"]))
+        tier: 2, prerequisite: "chord-dm", steps: chordSteps(["E", "A", "E", "A"]))
 
     static let changeAD = Lesson(
         id: "change-ad", title: "A ↔ D", subtitle: "The A–D change",
@@ -161,6 +166,11 @@ enum LessonLibrary {
     static let changeGC = Lesson(
         id: "change-gc", title: "G ↔ C", subtitle: "The classic G–C change",
         tier: 2, prerequisite: "change-ad", steps: chordSteps(["G", "C", "G", "C"]))
+
+    // Optional side branch — the minor-family change (doesn't gate strumming).
+    static let changeAmDm = Lesson(
+        id: "change-am-dm", title: "Am ↔ Dm", subtitle: "Glide between the minor shapes",
+        tier: 2, prerequisite: "change-gc", steps: chordSteps(["Am", "Dm", "Am", "Dm"]))
 
     // MARK: - Tier 2 — strumming in time (metronome + onset timing)
 
@@ -281,8 +291,8 @@ enum LessonLibrary {
                           (2, 1), (2, 2), (2, 3), (2, 4)]))
 
     static let all: [Lesson] = [openStrings, stringSwitching, lowToHigh, lowENotes, aStringNotes,
-                                chordEm, chordAm, songEmAm, chordE, chordA, chordD, chordG, chordC,
-                                changeEA, changeAD, changeGC,
+                                chordEm, chordAm, songEmAm, chordE, chordA, chordD, chordG, chordC, chordDm,
+                                changeEA, changeAD, changeGC, changeAmDm,
                                 strumDown, strumKeep, firstSong, spiralGCD,
                                 cheaterF, chordF, chordBm, moreBarre, changeFC, powerChords, powerRiff,
                                 palmMute, fasterStrum, sixteenths, spiralBarreMix,
@@ -413,15 +423,16 @@ enum CourseLibrary {
 
     static let firstChords = Course(
         id: "first-chords", title: "First Chords",
-        subtitle: "Tier 1 · Em Am E A D G C", tier: 1,
+        subtitle: "Tier 1 · Em Am E A D G C Dm", tier: 1,
         lessons: [LessonLibrary.chordEm, LessonLibrary.chordAm, LessonLibrary.songEmAm,
                   LessonLibrary.chordE, LessonLibrary.chordA, LessonLibrary.chordD,
-                  LessonLibrary.chordG, LessonLibrary.chordC])
+                  LessonLibrary.chordG, LessonLibrary.chordC, LessonLibrary.chordDm])
 
     static let chordChanges = Course(
         id: "chord-changes", title: "Chord Changes",
         subtitle: "Tier 2 · Switch cleanly", tier: 2,
-        lessons: [LessonLibrary.changeEA, LessonLibrary.changeAD, LessonLibrary.changeGC])
+        lessons: [LessonLibrary.changeEA, LessonLibrary.changeAD, LessonLibrary.changeGC,
+                  LessonLibrary.changeAmDm])
 
     static let strumming = Course(
         id: "strumming", title: "Strumming & Songs",
