@@ -48,10 +48,19 @@ struct PlayAlongView: View {
             .padding(.horizontal, 20).padding(.top, 12)
 
             ScrollView {
-                VStack(spacing: 14) {
-                    ForEach(SongLibrary.all) { item in
-                        Button { song = item } label: { songCard(item) }
-                            .buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(SongDifficulty.allCases, id: \.self) { difficulty in
+                        let songs = SongLibrary.songs(difficulty)
+                        if !songs.isEmpty {
+                            Text(difficulty.label.uppercased())
+                                .font(Theme.light(11)).tracking(3)
+                                .foregroundStyle(Theme.frost.opacity(0.6))
+                                .padding(.top, difficulty == .beginner ? 0 : 12)
+                            ForEach(songs) { item in
+                                Button { song = item } label: { songCard(item) }
+                                    .buttonStyle(.plain)
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 22).padding(.top, 22)
