@@ -68,10 +68,11 @@ final class LessonViewModel {
     /// Which beats the player has landed (for the beat indicator).
     var strumHitBeats: Set<Int> { hitBeats }
 
-    /// Pass threshold for a strum step: land ~60% of the beats.
+    /// Pass threshold for a strum step: land ~60% of the expected hits
+    /// (every beat in simple mode; the non-rest eighth slots in pattern mode).
     var strumTarget: Int {
         guard let pattern = currentStep.strum else { return 0 }
-        return max(1, Int((Double(pattern.beats) * 0.6).rounded()))
+        return max(1, Int((Double(pattern.expectedHits.count) * 0.6).rounded()))
     }
 
     var currentStep: LessonStep { lesson.steps[min(currentIndex, lesson.steps.count - 1)] }
@@ -149,14 +150,17 @@ final class LessonViewModel {
         if strumTime > Double(pattern.beats) * beatInterval + 0.4 { finishStrum() }
     }
 
-    /// A detected onset: credit the nearest beat if it's close enough.
+    /// A detected onset: credit the nearest expected hit if it's close enough
+    /// (every beat in simple mode; the pattern's non-rest eighths otherwise).
     private func registerStrum() {
         guard strumRunning, let pattern = currentStep.strum, strumTime >= -0.15 else { return }
         let beatInterval = 60.0 / Double(currentBpm)
-        let nearest = Int((strumTime / beatInterval).rounded())
-        guard nearest >= 0, nearest < pattern.beats, !hitBeats.contains(nearest) else { return }
-        if abs(strumTime - Double(nearest) * beatInterval) <= AudioSettings.shared.timingWindow {
-            hitBeats.insert(nearest)
+        let unhit = pattern.expectedHits.filter { !hitBeats.contains($0.id) }
+        guard let nearest = unhit.min(by: {
+            abs(strumTime - $0.beatOffset * beatInterval) < abs(strumTime - $1.beatOffset * beatInterval)
+        }) else { return }
+        if abs(strumTime - nearest.beatOffset * beatInterval) <= AudioSettings.shared.timingWindow {
+            hitBeats.insert(nearest.id)
             strumHits += 1
         }
     }
@@ -268,7 +272,7 @@ final class LessonViewModel {
         // Score this step's quality before clearing per-step state.
         let quality: Double
         if let pattern = currentStep.strum {
-            quality = min(1, Double(strumHits) / Double(max(1, pattern.beats)))   // beats hit in time
+            quality = min(1, Double(strumHits) / Double(max(1, pattern.expectedHits.count)))   // hits in time
         } else {
             quality = stepMisses == 0 ? 1.0 : 1.0 / Double(1 + stepMisses)        // steady-hold cleanliness
         }

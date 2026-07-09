@@ -13,7 +13,32 @@ final class CourseTests: XCTestCase {
         XCTAssertEqual(CourseLibrary.firstNotes.lessons.count, 2)
         XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 9)   // Em Am, song, E A D G C Dm
         XCTAssertEqual(CourseLibrary.chordChanges.lessons.count, 4)  // + Am↔Dm side branch
-        XCTAssertEqual(CourseLibrary.strumming.lessons.count, 4)   // + spiral G–C–D
+        XCTAssertEqual(CourseLibrary.strumming.lessons.count, 10)  // + patterns, dynamics, chuck, songs
+    }
+
+    func testStrumPatternLibrary() {
+        // Pattern lessons carry eighth-note strokes; simple lessons don't.
+        XCTAssertNil(LessonLibrary.strumDown.steps.first?.strum?.strokes)
+        let downUp = LessonLibrary.patternDownUp.steps.first?.strum
+        XCTAssertEqual(downUp?.strokes?.count, 8)          // 2 slots per beat
+        XCTAssertEqual(downUp?.beats, 4)
+        // Old Faithful: D · D-U · U-D-U = 6 hits out of 8 slots.
+        let faithful = LessonLibrary.patternOldFaithful.steps.first?.strum
+        XCTAssertEqual(faithful?.strokes,
+                       [.down, .rest, .down, .up, .rest, .up, .down, .up])
+        XCTAssertEqual(faithful?.expectedHits.count, 6)
+        // Expected offsets land on the eighth grid (beats: 0, 1, 1.5, 2.5, 3, 3.5).
+        XCTAssertEqual(faithful?.expectedHits.map { $0.beatOffset },
+                       [0, 1.0, 1.5, 2.5, 3.0, 3.5])
+        // Simple mode: one expected hit per beat, ids are beat indices.
+        let simple = StrumPattern(bpm: 80, beats: 4)
+        XCTAssertEqual(simple.expectedHits.map { $0.beatOffset }, [0, 1, 2, 3])
+        XCTAssertEqual(simple.expectedHits.map { $0.id }, [0, 1, 2, 3])
+        // The new songs resolve all their chords, incl. Dm in the minor loop.
+        XCTAssertEqual(LessonLibrary.songFifties.steps.compactMap { $0.chord?.id },
+                       ["G", "Em", "C", "D"])
+        XCTAssertEqual(LessonLibrary.songMinorLoop.steps.compactMap { $0.chord?.id },
+                       ["Am", "Dm", "G", "C"])
     }
 
     func testTier3BarreContent() {

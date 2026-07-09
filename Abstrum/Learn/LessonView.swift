@@ -202,7 +202,7 @@ struct LessonView: View {
                 }
             }
             tempoPill.padding(.top, 16)
-            beatIndicator.padding(.top, 14)
+            strumIndicator.padding(.top, 14)
             Spacer()
             strumControl.padding(.horizontal, 30).padding(.bottom, 28)
         }
@@ -225,6 +225,35 @@ struct LessonView: View {
         .animation(.snappy, value: model.currentBpm)
     }
 
+    /// Pattern steps show down/up arrows per eighth slot; simple steps show
+    /// the per-beat dots.
+    @ViewBuilder private var strumIndicator: some View {
+        if let strokes = model.currentStep.strum?.strokes {
+            patternIndicator(strokes)
+        } else {
+            beatIndicator
+        }
+    }
+
+    private func patternIndicator(_ strokes: [StrumStroke]) -> some View {
+        HStack(spacing: 8) {
+            ForEach(Array(strokes.enumerated()), id: \.offset) { index, stroke in
+                Group {
+                    switch stroke {
+                    case .down: Image(systemName: "arrow.down").font(.system(size: 16, weight: .bold))
+                    case .up:   Image(systemName: "arrow.up").font(.system(size: 16, weight: .bold))
+                    case .rest: Circle().frame(width: 5, height: 5)
+                    }
+                }
+                .foregroundStyle(stroke == .rest ? AnyShapeStyle(.white.opacity(0.18))
+                    : model.strumHitBeats.contains(index) ? AnyShapeStyle(Theme.teal)
+                    : AnyShapeStyle(Theme.frost.opacity(0.55)))
+                .frame(width: 20, height: 22)
+            }
+        }
+        .animation(.snappy, value: model.strumHits)
+    }
+
     private var beatIndicator: some View {
         let beats = model.currentStep.strum?.beats ?? 0
         return HStack(spacing: 10) {
@@ -242,7 +271,8 @@ struct LessonView: View {
 
     @ViewBuilder private var strumControl: some View {
         if model.strumRunning {
-            Text(model.strumBeat < 0 ? "Get ready…" : "Strum on every click")
+            Text(model.strumBeat < 0 ? "Get ready…"
+                 : (model.currentStep.strum?.strokes != nil ? "Follow the arrows" : "Strum on every click"))
                 .font(Theme.title(17)).tracking(1).foregroundStyle(Theme.frost.opacity(0.8))
                 .frame(height: 54)
         } else if model.strumFinished {

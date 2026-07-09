@@ -13,10 +13,30 @@ struct FretPosition: Hashable {
     var finger: Int = 0
 }
 
-/// A timed strum exercise: strum `chord` once per beat at `bpm` for `beats` beats.
+/// One eighth-note slot of a strum pattern.
+enum StrumStroke: Hashable {
+    case down, up, rest
+}
+
+/// A timed strum exercise at `bpm` for `beats` beats. Without `strokes`, one
+/// downstroke per beat. With `strokes` (two eighth-note slots per beat), the
+/// pattern defines which slots are hit — down/up arrows are guidance; the mic
+/// can't hear stroke direction, so grading scores the rhythm (hit the non-rest
+/// slots in time).
 struct StrumPattern: Hashable {
     let bpm: Int
     let beats: Int
+    var strokes: [StrumStroke]? = nil
+
+    /// Beat offsets (in beats) where a strum is expected, with the slot id used
+    /// for hit-tracking: the strokes index in pattern mode, the beat index in
+    /// simple mode.
+    var expectedHits: [(id: Int, beatOffset: Double)] {
+        guard let strokes else { return (0..<beats).map { ($0, Double($0)) } }
+        return strokes.enumerated().compactMap { index, stroke in
+            stroke == .rest ? nil : (index, Double(index) * 0.5)
+        }
+    }
 }
 
 struct LessonStep: Identifiable, Hashable {
@@ -194,6 +214,52 @@ enum LessonLibrary {
         tier: 2, prerequisite: "first-song", prerequisites: ["chord-g", "chord-c", "chord-d"],
         steps: strumSteps([("G", 100, 4), ("C", 100, 4), ("D", 100, 4), ("G", 100, 4)]))
 
+    // MARK: - Tier 2 — the strum-pattern library (eighth-note down/up)
+
+    static let patternDownUp = Lesson(
+        id: "pattern-du", title: "Down-Up Strumming",
+        subtitle: "Catch the strings on the way back up", tier: 2, prerequisite: "spiral-gcd",
+        steps: patternSteps([
+            ("E", 70, [.down, .up, .down, .up, .down, .up, .down, .up]),
+            ("A", 70, [.down, .up, .down, .up, .down, .up, .down, .up]),
+        ]))
+
+    /// The most-taught strum pattern in the world: D · D-U · U-D-U.
+    static let patternOldFaithful = Lesson(
+        id: "pattern-old-faithful", title: "Old Faithful",
+        subtitle: "D · D-U · U-D-U — the pattern behind a thousand songs", tier: 2,
+        prerequisite: "pattern-du",
+        steps: patternSteps([
+            ("G", 75, [.down, .rest, .down, .up, .rest, .up, .down, .up]),
+            ("C", 75, [.down, .rest, .down, .up, .rest, .up, .down, .up]),
+            ("G", 75, [.down, .rest, .down, .up, .rest, .up, .down, .up]),
+        ]))
+
+    // Dynamics: accent placement (graded on timing; the accent is coached).
+    static let accents = Lesson(
+        id: "accents", title: "Accents",
+        subtitle: "Dig into beats 1 and 3 — depth, not force", tier: 2,
+        prerequisite: "pattern-old-faithful", steps: strumSteps([("D", 80, 8)]))
+
+    // Percussive muting: the "chuck" on the backbeat (its slap still reads as
+    // an onset, so timing grades normally).
+    static let chuck = Lesson(
+        id: "chuck", title: "The Chuck",
+        subtitle: "Land your palm as you strum beats 2 and 4", tier: 2,
+        prerequisite: "accents", steps: strumSteps([("A", 80, 8)]))
+
+    // More songs to carry the spiral.
+    static let songFifties = Lesson(
+        id: "song-fifties", title: "The '50s Progression",
+        subtitle: "G–Em–C–D — the doo-wop turnaround", tier: 2, prerequisite: "chuck",
+        steps: strumSteps([("G", 85, 4), ("Em", 85, 4), ("C", 85, 4), ("D", 85, 4)]))
+
+    static let songMinorLoop = Lesson(
+        id: "song-minor-loop", title: "Minor Loop",
+        subtitle: "Am–Dm–G–C — moody and circular", tier: 2, prerequisite: "song-fifties",
+        prerequisites: ["chord-dm"],
+        steps: strumSteps([("Am", 85, 4), ("Dm", 85, 4), ("G", 85, 4), ("C", 85, 4)]))
+
     // MARK: - Tier 3 — barre chords, power chords & rhythm
 
     static let cheaterF = Lesson(
@@ -294,6 +360,7 @@ enum LessonLibrary {
                                 chordEm, chordAm, songEmAm, chordE, chordA, chordD, chordG, chordC, chordDm,
                                 changeEA, changeAD, changeGC, changeAmDm,
                                 strumDown, strumKeep, firstSong, spiralGCD,
+                                patternDownUp, patternOldFaithful, accents, chuck, songFifties, songMinorLoop,
                                 cheaterF, chordF, chordBm, moreBarre, changeFC, powerChords, powerRiff,
                                 palmMute, fasterStrum, sixteenths, spiralBarreMix,
                                 minorPentatonic, pentatonicRun, firstLick,
@@ -369,6 +436,17 @@ extension LessonLibrary {
         }
     }
 
+    /// Eighth-note strum-pattern steps: (chord id, bpm, strokes — 2 per beat).
+    private static func patternSteps(_ specs: [(String, Int, [StrumStroke])]) -> [LessonStep] {
+        specs.enumerated().compactMap { index, spec in
+            guard let chord = chord(spec.0) else { return nil }
+            return LessonStep(id: index, note: chord.name, octaveLabel: "", frequency: 0,
+                              hint: "Follow the arrows on \(chord.name)", position: nil,
+                              chord: chord,
+                              strum: StrumPattern(bpm: spec.1, beats: spec.2.count / 2, strokes: spec.2))
+        }
+    }
+
     private static let stringHints = [
         "6th string — low E", "5th string — A", "4th string — D",
         "3rd string — G", "2nd string — B", "1st string — high E",
@@ -436,9 +514,11 @@ enum CourseLibrary {
 
     static let strumming = Course(
         id: "strumming", title: "Strumming & Songs",
-        subtitle: "Tier 2 · Play in time", tier: 2,
+        subtitle: "Tier 2 · Patterns, dynamics, songs", tier: 2,
         lessons: [LessonLibrary.strumDown, LessonLibrary.strumKeep, LessonLibrary.firstSong,
-                  LessonLibrary.spiralGCD])
+                  LessonLibrary.spiralGCD, LessonLibrary.patternDownUp,
+                  LessonLibrary.patternOldFaithful, LessonLibrary.accents, LessonLibrary.chuck,
+                  LessonLibrary.songFifties, LessonLibrary.songMinorLoop])
 
     // MARK: - Tiers 3–5 — on the map, content not authored yet
 
