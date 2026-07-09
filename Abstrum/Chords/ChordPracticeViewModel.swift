@@ -9,7 +9,7 @@ import SwiftUI
 
 @Observable
 final class ChordPracticeViewModel {
-    let chord: Chord
+    private(set) var chord: Chord
     var score: Double = 0        // live match 0…1
     var matched = false
     var listening = false
@@ -51,6 +51,14 @@ final class ChordPracticeViewModel {
         matched = false
         holdFrames = 0
         score = 0
+    }
+
+    /// Switch to another voicing of the same chord (variant picker). Match
+    /// state resets; detection templates are identical across variants.
+    func select(_ variant: Chord) {
+        chord = variant
+        chordEngine?.reset()
+        reset()
     }
 
     /// Play the chord as an example; pause the mic so it isn't self-detected.

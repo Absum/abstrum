@@ -8,10 +8,13 @@ import SwiftUI
 struct ChordPracticeView: View {
     @State private var model: ChordPracticeViewModel
     @AppStorage("showFingerNumbers") private var showFingers = false
+    @State private var variantIndex = 0
+    private let variants: [ChordVariant]
     private let onClose: () -> Void
 
     init(chord: Chord, onClose: @escaping () -> Void) {
         _model = State(initialValue: ChordPracticeViewModel(chord: chord))
+        variants = ChordVariants.variants(for: chord.id)
         self.onClose = onClose
     }
 
@@ -44,6 +47,8 @@ struct ChordPracticeView: View {
                         .font(Theme.light(11)).tracking(1).foregroundStyle(Theme.frost.opacity(0.6))
                         .padding(.top, 10)
                 }
+
+                if variants.count > 1 { variantPicker.padding(.top, 14) }
 
                 Spacer(minLength: 28)
 
@@ -78,6 +83,34 @@ struct ChordPracticeView: View {
             Color.clear.frame(width: 40, height: 40)
         }
         .padding(.horizontal, 20)
+    }
+
+    /// Other ways to play the same chord, with a when-to-use note. Detection
+    /// templates are identical, so any voicing verifies the same.
+    private var variantPicker: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                ForEach(Array(variants.enumerated()), id: \.element.id) { index, variant in
+                    Button {
+                        variantIndex = index
+                        model.select(variant.chord)
+                    } label: {
+                        Text(variant.label.uppercased())
+                            .font(Theme.title(12)).tracking(1)
+                            .foregroundStyle(index == variantIndex ? Color(hex: 0x06222A) : Theme.frost.opacity(0.75))
+                            .padding(.horizontal, 14).frame(height: 32)
+                            .background(Capsule().fill(index == variantIndex ? Theme.teal : .white.opacity(0.07)))
+                            .overlay(Capsule().stroke(.white.opacity(index == variantIndex ? 0 : 0.14), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            Text(variants[variantIndex].whenToUse)
+                .font(Theme.body(13)).foregroundStyle(Theme.frost.opacity(0.65))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 36)
+        }
+        .animation(.snappy, value: variantIndex)
     }
 
     private var hearItButton: some View {

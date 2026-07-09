@@ -72,6 +72,7 @@ targets:
       - path: Abstrum/Learn/InterleavedDrill.swift
       - path: Abstrum/Learn/ReminderScheduler.swift
       - path: Abstrum/Chords/Chord.swift
+      - path: Abstrum/Chords/ChordVariants.swift
       - path: Abstrum/Chords/ChordProgression.swift
       - path: Abstrum/Songs/Song.swift
       - path: Abstrum/Highway/TabImport.swift

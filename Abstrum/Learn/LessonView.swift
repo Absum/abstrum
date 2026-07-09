@@ -423,6 +423,14 @@ struct LessonView: View {
 
     // MARK: - Completion
 
+    /// The chord name to nudge about, when this is a single-chord lesson whose
+    /// chord has registered voicing variants.
+    private var variantHint: String? {
+        let ids = Set(model.lesson.steps.compactMap { $0.chord?.id })
+        guard ids.count == 1, let id = ids.first, ChordVariants.hasAlternates(id) else { return nil }
+        return model.lesson.steps.first?.chord?.name
+    }
+
     private var masteryReadout: some View {
         VStack(spacing: 8) {
             Text("THIS RUN  ·  \(Int(model.lastRunScore * 100))% CLEAN")
@@ -456,6 +464,18 @@ struct LessonView: View {
             if model.lesson.tracksProgress {
                 // Ephemeral drills (the mix) don't accrue mastery — no bar to show.
                 masteryReadout.padding(.horizontal, 40).padding(.top, 4)
+            }
+
+            // Only after mastery (never during first acquisition): point at the
+            // other ways to play this chord in the Chords reference tab.
+            if model.isMastered, let hint = variantHint {
+                HStack(spacing: 7) {
+                    Image(systemName: "lightbulb.fill").font(.system(size: 12))
+                    Text("There's another way to play \(hint) — see the Chords tab")
+                        .font(Theme.body(13))
+                }
+                .foregroundStyle(Theme.cyan.opacity(0.85))
+                .padding(.top, 2)
             }
 
             VStack(spacing: 12) {
