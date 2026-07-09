@@ -385,6 +385,18 @@ enum LessonLibrary {
         subtitle: "Major, minor — or that bluesy 7th", tier: 2, prerequisite: "ear-quality-1",
         steps: [], ear: EarDrillSpec(kind: .chordQualities([.major, .minor, .dom7]), questionCount: 8))
 
+    /// Rhythm dictation: steady patterns with one added eighth (Gordon audiation).
+    static let earRhythm1 = Lesson(
+        id: "ear-rhythm-1", title: "Echo the Beat",
+        subtitle: "Hear the rhythm, pick the count", tier: 2, prerequisite: "strum-down",
+        steps: [], ear: EarDrillSpec(kind: .rhythms([0, 1, 2]), questionCount: 6))
+
+    /// Syncopation: offbeat and double-eighth patterns.
+    static let earRhythm2 = Lesson(
+        id: "ear-rhythm-2", title: "Offbeats",
+        subtitle: "When the hit lands on the &", tier: 2, prerequisite: "ear-rhythm-1",
+        steps: [], ear: EarDrillSpec(kind: .rhythms([1, 3, 4, 5]), questionCount: 6))
+
     /// Full 12-bar slow blues in E with 7th voicings.
     static let fullSlowBlues = Lesson(
         id: "full-slow-blues", title: "Full Song: Slow Blues in E",
@@ -428,7 +440,7 @@ enum LessonLibrary {
                                 minorPentatonic, pentatonicRun, firstLick,
                                 pentatonicBox1, box1Lick, majorScaleG, fingerIndependence,
                                 fingerstyleThumb, fingerstyleArp, fullWaterWide, fullSlowBlues,
-                                earIntervals1, earIntervals2, earQuality1, earQuality2]
+                                earIntervals1, earIntervals2, earQuality1, earQuality2, earRhythm1, earRhythm2]
 
     /// Fast id → lesson lookup. Progress/SRS data can reference ids that no
     /// longer exist after a curriculum resequencing — always resolve through
@@ -613,7 +625,8 @@ enum CourseLibrary {
         id: "ear-training", title: "Ear Training",
         subtitle: "Tier 2 · Hear it before you play it", tier: 2,
         lessons: [LessonLibrary.earIntervals1, LessonLibrary.earIntervals2,
-                  LessonLibrary.earQuality1, LessonLibrary.earQuality2])
+                  LessonLibrary.earQuality1, LessonLibrary.earQuality2,
+                  LessonLibrary.earRhythm1, LessonLibrary.earRhythm2])
 
     /// The full skill-graph map, tier 0 → 5 — every tier now has real content.
     // Chords-first: First Chords sits right after First Contact; First Notes
