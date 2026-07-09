@@ -397,6 +397,19 @@ enum LessonLibrary {
         subtitle: "When the hit lands on the &", tier: 2, prerequisite: "ear-rhythm-1",
         steps: [], ear: EarDrillSpec(kind: .rhythms([1, 3, 4, 5]), questionCount: 6))
 
+    // Audiation woven into the main path (non-gating side nodes): the ear work
+    // meets the hands right where the matching skill is being learned.
+    static let earChordEcho = Lesson(
+        id: "ear-chord-echo", title: "Hear the Change",
+        subtitle: "You can play Em and Am — now tell them apart by ear", tier: 1,
+        prerequisite: "song-em-am",
+        steps: [], ear: EarDrillSpec(kind: .chordQualities([.major, .minor]), questionCount: 6))
+
+    static let earPulse = Lesson(
+        id: "ear-pulse", title: "Feel the Pulse",
+        subtitle: "Hear the rhythm you just strummed", tier: 2, prerequisite: "strum-keep",
+        steps: [], ear: EarDrillSpec(kind: .rhythms([0, 1, 2]), questionCount: 6))
+
     /// Full 12-bar slow blues in E with 7th voicings.
     static let fullSlowBlues = Lesson(
         id: "full-slow-blues", title: "Full Song: Slow Blues in E",
@@ -431,9 +444,9 @@ enum LessonLibrary {
                           (2, 1), (2, 2), (2, 3), (2, 4)]))
 
     static let all: [Lesson] = [openStrings, stringSwitching, lowToHigh, lowENotes, aStringNotes,
-                                chordEm, chordAm, songEmAm, chordE, chordA, chordD, chordG, chordC, chordDm,
+                                chordEm, chordAm, songEmAm, earChordEcho, chordE, chordA, chordD, chordG, chordC, chordDm,
                                 changeEA, changeAD, changeGC, changeAmDm,
-                                strumDown, strumKeep, firstSong, spiralGCD,
+                                strumDown, strumKeep, earPulse, firstSong, spiralGCD,
                                 patternDownUp, patternOldFaithful, accents, chuck, songFifties, songMinorLoop,
                                 cheaterF, chordF, chordBm, moreBarre, changeFC, powerChords, powerRiff,
                                 palmMute, fasterStrum, sixteenths, spiralBarreMix,
@@ -579,7 +592,7 @@ enum CourseLibrary {
         id: "first-chords", title: "First Chords",
         subtitle: "Tier 1 · Em Am E A D G C Dm", tier: 1,
         lessons: [LessonLibrary.chordEm, LessonLibrary.chordAm, LessonLibrary.songEmAm,
-                  LessonLibrary.chordE, LessonLibrary.chordA, LessonLibrary.chordD,
+                  LessonLibrary.earChordEcho, LessonLibrary.chordE, LessonLibrary.chordA, LessonLibrary.chordD,
                   LessonLibrary.chordG, LessonLibrary.chordC, LessonLibrary.chordDm])
 
     static let chordChanges = Course(
@@ -591,7 +604,8 @@ enum CourseLibrary {
     static let strumming = Course(
         id: "strumming", title: "Strumming & Songs",
         subtitle: "Tier 2 · Patterns, dynamics, songs", tier: 2,
-        lessons: [LessonLibrary.strumDown, LessonLibrary.strumKeep, LessonLibrary.firstSong,
+        lessons: [LessonLibrary.strumDown, LessonLibrary.strumKeep, LessonLibrary.earPulse,
+                  LessonLibrary.firstSong,
                   LessonLibrary.spiralGCD, LessonLibrary.patternDownUp,
                   LessonLibrary.patternOldFaithful, LessonLibrary.accents, LessonLibrary.chuck,
                   LessonLibrary.songFifties, LessonLibrary.songMinorLoop])

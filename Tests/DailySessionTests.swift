@@ -54,10 +54,12 @@ final class DailySessionTests: XCTestCase {
     }
 
     func testNewSkillIsTheFrontierLesson() {
-        // Through chord-c, the next unlocked-but-unlearned lesson is Dm (the
-        // last Tier-1 chord, which gates the Tier-2 changes).
+        // Through chord-c, the frontier is the woven-in ear check (it follows
+        // the first song in path order); with it done, the frontier is Dm.
         let plan = DailySession.plan(completed: throughOpenChords, due: [])
-        XCTAssertEqual(plan.first { $0.phase == .newSkill }?.lesson.id, "chord-dm")
+        XCTAssertEqual(plan.first { $0.phase == .newSkill }?.lesson.id, "ear-chord-echo")
+        let plan2 = DailySession.plan(completed: throughOpenChords.union(["ear-chord-echo"]), due: [])
+        XCTAssertEqual(plan2.first { $0.phase == .newSkill }?.lesson.id, "chord-dm")
     }
 
     func testNoDuplicateLessonsAcrossPhases() {

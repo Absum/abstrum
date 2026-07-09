@@ -11,9 +11,20 @@ final class CourseTests: XCTestCase {
         XCTAssertEqual(CourseLibrary.all.count, 9)   // all playable — incl. the Ear Training track
         XCTAssertEqual(CourseLibrary.firstContact.lessons.count, 3)
         XCTAssertEqual(CourseLibrary.firstNotes.lessons.count, 2)
-        XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 9)   // Em Am, song, E A D G C Dm
+        XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 10)  // Em Am, song, ear echo, E A D G C Dm
         XCTAssertEqual(CourseLibrary.chordChanges.lessons.count, 4)  // + Am↔Dm side branch
-        XCTAssertEqual(CourseLibrary.strumming.lessons.count, 10)  // + patterns, dynamics, chuck, songs
+        XCTAssertEqual(CourseLibrary.strumming.lessons.count, 11)  // + patterns, dynamics, chuck, songs, ear pulse
+    }
+
+    func testAudiationIsWovenIntoTheMainPath() {
+        // Ear nodes live inside the main-path courses, right where the matching
+        // hand skill is learned — and never gate the spine.
+        XCTAssertTrue(CourseLibrary.firstChords.lessons.contains { $0.id == "ear-chord-echo" })
+        XCTAssertTrue(CourseLibrary.strumming.lessons.contains { $0.id == "ear-pulse" })
+        XCTAssertEqual(LessonLibrary.earChordEcho.prerequisite, "song-em-am")
+        XCTAssertEqual(LessonLibrary.chordE.prerequisite, "song-em-am")     // spine unaffected
+        XCTAssertEqual(LessonLibrary.earPulse.prerequisite, "strum-keep")
+        XCTAssertEqual(LessonLibrary.firstSong.prerequisite, "strum-keep")  // spine unaffected
     }
 
     func testStrumPatternLibrary() {
@@ -120,7 +131,7 @@ final class CourseTests: XCTestCase {
     }
 
     func testChordLessonsTargetChords() {
-        for lesson in CourseLibrary.firstChords.lessons {
+        for lesson in CourseLibrary.firstChords.lessons where lesson.ear == nil {
             XCTAssertFalse(lesson.steps.isEmpty)
             XCTAssertTrue(lesson.steps.allSatisfy { $0.chord != nil })
         }
