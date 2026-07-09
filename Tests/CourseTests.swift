@@ -8,7 +8,7 @@ import XCTest
 final class CourseTests: XCTestCase {
 
     func testCoursesExist() {
-        XCTAssertEqual(CourseLibrary.all.count, 8)   // 5 playable + 3 coming-soon (tiers 3–5)
+        XCTAssertEqual(CourseLibrary.all.count, 8)   // all 8 playable — no placeholders left
         XCTAssertEqual(CourseLibrary.firstContact.lessons.count, 3)
         XCTAssertEqual(CourseLibrary.firstNotes.lessons.count, 2)
         XCTAssertEqual(CourseLibrary.firstChords.lessons.count, 9)   // Em Am, song, E A D G C Dm
@@ -86,14 +86,30 @@ final class CourseTests: XCTestCase {
     }
 
     func testFullSixTierMap() {
-        // Tiers 0 through 5 are all represented on the map.
+        // Tiers 0 through 5 are all represented — and all real now: no
+        // coming-soon placeholders, every course has lessons.
         let tiers = Set(CourseLibrary.all.map { $0.tier })
         XCTAssertEqual(tiers, [0, 1, 2, 3, 4, 5])
-        // Tiers 3–5 are coming-soon placeholders: locked, no lessons.
-        for course in CourseLibrary.all where course.comingSoon {
-            XCTAssertTrue(course.lessons.isEmpty)
-            XCTAssertFalse(CourseLibrary.isUnlocked(course, completed: ["low-to-high"]))
+        for course in CourseLibrary.all {
+            XCTAssertFalse(course.comingSoon, "\(course.id) is still a placeholder")
+            XCTAssertFalse(course.lessons.isEmpty, "\(course.id) has no lessons")
         }
+    }
+
+    func testTier5IntermediateContent() {
+        XCTAssertFalse(CourseLibrary.intermediate.comingSoon)
+        XCTAssertEqual(CourseLibrary.intermediate.lessons.count, 4)
+        // Gated on the end of Tier 4 lead.
+        XCTAssertEqual(LessonLibrary.fingerstyleThumb.prerequisite, "first-lick")
+        // Fingerstyle intro is pure single-note content.
+        XCTAssertTrue(LessonLibrary.fingerstyleThumb.steps.allSatisfy { $0.chord == nil && $0.strum == nil })
+        XCTAssertTrue(LessonLibrary.fingerstyleArp.steps.allSatisfy { $0.chord == nil && $0.strum == nil })
+        // Full songs resolve every chord, including the F barre and the 7ths.
+        XCTAssertEqual(LessonLibrary.fullWaterWide.steps.count, 8)
+        XCTAssertTrue(LessonLibrary.fullWaterWide.prerequisites.contains("chord-f"))
+        XCTAssertEqual(LessonLibrary.fullSlowBlues.steps.count, 12)
+        XCTAssertEqual(Set(LessonLibrary.fullSlowBlues.steps.compactMap { $0.chord?.id }),
+                       ["E7", "A7", "B7"])
     }
 
     func testStrumLessonsAreTimed() {

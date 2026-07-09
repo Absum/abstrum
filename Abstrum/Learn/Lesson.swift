@@ -331,6 +331,39 @@ enum LessonLibrary {
         tier: 4, prerequisite: "pentatonic-run",
         steps: noteSteps([(3, 0), (3, 2), (3, 0), (2, 2), (2, 0), (1, 3), (1, 0)]))
 
+    // MARK: - Tier 5 — intermediate: fingerstyle & full songs
+    // (Practical theory + guided improv need the listen-and-answer interaction
+    // paradigm — split into their own task alongside the Phase 6 ear training.)
+
+    /// Thumb alternation over G and C bass strings — the seed of Travis picking.
+    static let fingerstyleThumb = Lesson(
+        id: "fingerstyle-thumb", title: "Thumb Bass",
+        subtitle: "Alternate the bass with your thumb", tier: 5, prerequisite: "first-lick",
+        steps: noteSteps([(0, 3), (2, 0), (0, 3), (2, 0), (1, 3), (3, 0), (1, 3), (3, 0)]))
+
+    /// Roll through an Em one string at a time — first fingerpicked arpeggio.
+    static let fingerstyleArp = Lesson(
+        id: "fingerstyle-arp", title: "First Arpeggio",
+        subtitle: "Roll through Em, one string at a time", tier: 5, prerequisite: "fingerstyle-thumb",
+        steps: noteSteps([(0, 0), (1, 2), (2, 2), (3, 0), (4, 0), (5, 0),
+                          (4, 0), (3, 0), (2, 2), (1, 2), (0, 0)]))
+
+    /// Full-song playthrough: The Water Is Wide (public domain) — open chords + the F barre.
+    static let fullWaterWide = Lesson(
+        id: "full-water-wide", title: "Full Song: The Water Is Wide",
+        subtitle: "A complete playthrough — barre included", tier: 5,
+        prerequisite: "fingerstyle-arp", prerequisites: ["chord-f"],
+        steps: strumSteps([("C", 85, 4), ("F", 85, 4), ("C", 85, 4), ("Am", 85, 4),
+                           ("Dm", 85, 4), ("G", 85, 4), ("C", 85, 4), ("G", 85, 4)]))
+
+    /// Full 12-bar slow blues in E with 7th voicings.
+    static let fullSlowBlues = Lesson(
+        id: "full-slow-blues", title: "Full Song: Slow Blues in E",
+        subtitle: "Twelve bars of 7th chords", tier: 5, prerequisite: "full-water-wide",
+        steps: strumSteps([("E7", 80, 4), ("E7", 80, 4), ("E7", 80, 4), ("E7", 80, 4),
+                           ("A7", 80, 4), ("A7", 80, 4), ("E7", 80, 4), ("E7", 80, 4),
+                           ("B7", 80, 4), ("A7", 80, 4), ("E7", 80, 4), ("B7", 80, 4)]))
+
     // The movable A-minor-pentatonic Box 1 at the 5th fret — the shape that slides.
     static let pentatonicBox1 = Lesson(
         id: "pentatonic-box1", title: "Pentatonic Box 1", subtitle: "The movable shape — A minor, 5th fret",
@@ -364,7 +397,8 @@ enum LessonLibrary {
                                 cheaterF, chordF, chordBm, moreBarre, changeFC, powerChords, powerRiff,
                                 palmMute, fasterStrum, sixteenths, spiralBarreMix,
                                 minorPentatonic, pentatonicRun, firstLick,
-                                pentatonicBox1, box1Lick, majorScaleG, fingerIndependence]
+                                pentatonicBox1, box1Lick, majorScaleG, fingerIndependence,
+                                fingerstyleThumb, fingerstyleArp, fullWaterWide, fullSlowBlues]
 
     /// Fast id → lesson lookup. Progress/SRS data can reference ids that no
     /// longer exist after a curriculum resequencing — always resolve through
@@ -539,10 +573,11 @@ enum CourseLibrary {
 
     static let intermediate = Course(
         id: "intermediate", title: "Intermediate",
-        subtitle: "Tier 5 · Improv, theory, ear training", tier: 5,
-        lessons: [], comingSoon: true)
+        subtitle: "Tier 5 · Fingerstyle & full songs", tier: 5,
+        lessons: [LessonLibrary.fingerstyleThumb, LessonLibrary.fingerstyleArp,
+                  LessonLibrary.fullWaterWide, LessonLibrary.fullSlowBlues])
 
-    /// The full skill-graph map, tier 0 → 5 (3–5 are locked placeholders).
+    /// The full skill-graph map, tier 0 → 5 — every tier now has real content.
     // Chords-first: First Chords sits right after First Contact; First Notes
     // (single-note fretting) is now a parallel side-track ahead of lead work.
     static let all: [Course] = [firstContact, firstChords, chordChanges, strumming,
